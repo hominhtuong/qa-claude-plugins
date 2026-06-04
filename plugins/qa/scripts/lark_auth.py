@@ -59,6 +59,8 @@ COMMAND_REQS = {
     "log-bug":      ["bitable.read", "bitable.write", "drive.upload"],
     "update-board": ["bitable.read"],
     "plan-tests":   ["wiki.read", "docx.read", "drive.read"],
+    "exploratory":  ["wiki.read", "docx.read", "drive.read"],  # reads a Lark spec into the oracle
+    "analyze-spec": ["wiki.read", "docx.read", "drive.read"],
 }
 
 # Lark error codes / signals that mean "the app lacks this permission" (best-effort;

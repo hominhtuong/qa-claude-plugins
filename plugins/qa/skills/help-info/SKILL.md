@@ -19,7 +19,7 @@ Take the platform from the argument (`web|android|ios`), else auto-detect (playw
 - design/coding rules → `rules/web/*` | `rules/app/*`
 
 ## Standard workflow — automation
-1. `/qa:exploratory <feature> [platform]` — explore like a senior QA, hunt bugs, capture evidence, output a bug report. **GATE**: any `[APP-BUG]` → report to dev, stop (do not write tests).
+1. `/qa:exploratory <feature> [platform] [--spec <file|url|figma|"text">]` — optionally read & analyze a spec (local file / URL / Figma / pasted prompt) into an expected-behavior oracle first, then explore like a senior QA, hunt bugs against the spec, capture evidence, output a bug report. **GATE**: any `[APP-BUG]` → report to dev, stop (do not write tests).
 2. `/qa:plan-tests <feature>` — design the automation test plan (only when exploratory is clean).
 3. `/qa:find-elements <screen>` — extract locators if needed.
 4. `/qa:cook <plan|requirement>` — write Page Object + test code.

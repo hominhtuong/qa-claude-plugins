@@ -32,10 +32,12 @@ Technical terms may remain in English (API, token, button, input, header, etc.).
 
 When invoked, you will receive:
 - `figma_link`: Figma design URL
-- `output_file`: Path to write the result (e.g., `plans/<feature>/tracking.md`)
+- `output_file`: Path to write the design summary (e.g., `results/exploratory/<group>/spec/figma-summary.md`)
+- `tracking_file`: Path to the screen-status tracking file (e.g., `results/exploratory/<group>/spec/figma-tracking.md`). If omitted, derive it next to `output_file` as `figma-tracking.md`.
 - `doc_index`: Index number of this document (e.g., 1, 2, 3...)
-- `max_screens`: Maximum screens to read (default: 7)
-- `screen_ids`: Specific node IDs to read (optional)
+- `max_screens`: Maximum screens to read per invocation (default: 7)
+- `batch`: Batch number (default: 1) — set when multiple Figma agents run in parallel over one file; each batch reads a distinct slice of screens.
+- `screen_ids`: Specific node IDs to read (optional — if provided, only read these screens)
 
 ## Process
 
@@ -55,12 +57,34 @@ Extract from URL:
 - Branch: `figma.com/design/:fileKey/branch/:branchKey/:fileName` → use `branchKey` as fileKey
 - `node-id`: from query parameter (convert `-` to `:`)
 
-### Step 3: Get metadata
+### Step 3: Get metadata + resume from tracking
+
+First, read `tracking_file` if it exists — it records which screens are already `DONE` (skip them) vs `PENDING` (still to read). This lets a later run resume without re-reading.
 
 ```
 mcp__figma__get_metadata(fileKey)
 ```
 → Get tree structure, identify all top-level screen/frame nodes.
+
+**Create / update the tracking file** `tracking_file` with one row per screen:
+
+```markdown
+# Figma Tracking
+## File: <fileKey>
+Link: <original URL>
+Total screens: <count> | Last updated: <YYYY-MM-DD>
+
+| # | Node ID | Screen Name | Status |
+|---|---------|-------------|--------|
+| 1 | 123:456 | Đăng nhập | PENDING |
+```
+
+When updating an existing tracking file, keep rows already `DONE`; only (re)read rows that are `PENDING`.
+
+**Screen-slicing rules** (so parallel batches don't overlap):
+- `screen_ids` provided → read exactly those.
+- Else read up to `max_screens` PENDING screens; if total ≤ 7 and a single batch → read all.
+- If total > 7 and multiple batches → batch N reads screens `[(batch-1)*max_screens, batch*max_screens)`; mark the rest PENDING for other batches.
 
 ### Step 4: Read screen details
 
@@ -132,10 +156,11 @@ Output format:
 
 ### Step 6: Return summary
 
-After writing to file, return a brief summary to the parent agent:
+After writing both files (summary + tracking), return a brief summary to the parent agent:
 ```
-Doc {index}: [Figma] "{file_name}" — {read_count}/{total_count} screens read, {pending_count} pending
+Doc {index}: [Figma] "{file_name}" — {read_count}/{total_count} screens read, {pending_count} pending (tracking: {tracking_file})
 ```
+If `{pending_count} > 0`, tell the parent to spawn another Figma agent (next `batch`) to read the remaining PENDING screens.
 
 ## Error Handling
 
@@ -146,7 +171,8 @@ Doc {index}: [Figma] "{file_name}" — {read_count}/{total_count} screens read, 
 ## Rules
 
 - **NEVER invent UI elements** — only describe what Figma shows
-- **Append, don't overwrite** — multiple agents may write to the same tracking file
+- **Maintain the tracking file** — record every screen with PENDING/DONE so a later run (or another batch) resumes without re-reading
+- **Append, don't overwrite** — multiple agents may write to the same summary/tracking file
 - **Vietnamese with diacritics** — all Vietnamese text must have proper diacritics
 - **Keep output clean** — structured markdown, not raw API dumps
 - If total screens > `max_screens`, clearly list pending screens for follow-up
