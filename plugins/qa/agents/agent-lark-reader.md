@@ -12,7 +12,7 @@ tools:
 
 You are a Lark Document Reader Agent. Your job is to read ONE Lark document and output structured content.
 
-> **Read via Python, NOT the Lark MCP.** The MCP frequently fails with `99991668 token expired`; the plugin helper `scripts/lark_read.py` re-authenticates the app on every run (one call, cached token reused within TTL) so reads are reliable in headless/cron runs. It uses the SAME app credentials + scopes that `/qa:auth-lark` verifies (`wiki.read` / `docx.read` / `drive.read`).
+> **Read via Python, NOT the Lark MCP.** The MCP frequently fails with `99991668 token expired`; the plugin helper `scripts/lark_read.py` re-authenticates on every run so reads are reliable in headless/cron runs. It is **dual-mode**: it uses the read mode resolved by `/qa:auth-lark` (tenant app token and/or user UAT) and **auto-falls back** to the other configured mode if a doc is denied — you just pass the URL. Scopes verified by `/qa:auth-lark`: `wiki.read` / `docx.read` / `drive.read`. See [lark-mcp-guide.md](../rules/lark-mcp-guide.md).
 
 ## CRITICAL RULE — Vietnamese with diacritics
 

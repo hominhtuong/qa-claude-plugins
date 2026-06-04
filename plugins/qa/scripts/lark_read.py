@@ -25,27 +25,18 @@ import argparse
 import json
 import re
 import sys
-import time
-from pathlib import Path
 from urllib.parse import urlparse
 
-from _env import env_str, load_env, project_root
-from lark_auth import DEFAULT_DOMAIN, STATE_NAME, _api, authenticate
+from _env import env_str, load_env
+from lark_auth import (DEFAULT_DOMAIN, _api, _classify, available_modes,
+                       get_read_token, other_mode)
 
-# --- token (reuse the cached tenant token across runs while it is still valid) ---
-
-
-def _get_token(domain: str) -> tuple[str, str]:
-    """Return (token, error). Re-auth only when no fresh cached token exists."""
-    app_id = env_str("LARK_APP_ID")
-    app_secret = env_str("LARK_APP_SECRET")
-    if not app_id or not app_secret:
-        return "", ("LARK_APP_ID / LARK_APP_SECRET not set in .claude/qa-claude/.plugin.env "
-                    "— run /qa:setup-plugin then /qa:auth-lark")
-    token, _expire, err = authenticate(domain, app_id, app_secret)
-    if not token:
-        return "", f"authentication failed: {err}"
-    return token, ""
+# --- token (dual-mode: tenant app token or user OAuth token, with fallback) ---
+#
+# The mode is resolved by lark_auth (--mode preference → cached read_mode → tenant).
+# If the chosen mode is DENIED the document, read_document flags it and main() retries
+# with the other configured mode — so a doc shared with only the user (or only the app)
+# is still read whichever way works.
 
 
 # --- URL parsing ---
@@ -76,7 +67,8 @@ def read_document(domain: str, token: str, kind: str, doc_token: str,
         st, jb = _api("GET", f"{domain}/open-apis/wiki/v2/spaces/get_node?token={doc_token}", token)
         node = (jb.get("data") or {}).get("node") or {}
         if not node:
-            return 4, {"ok": False, "error": f"cannot resolve wiki node ({jb.get('msg') or st})"}
+            return 4, {"ok": False, "error": f"cannot resolve wiki node ({jb.get('msg') or st})",
+                       "denied": _classify(st, jb) == "denied"}
         obj_token = node.get("obj_token", doc_token)
         obj_type = node.get("obj_type", "docx")
         title = node.get("title", "")
@@ -91,7 +83,7 @@ def read_document(domain: str, token: str, kind: str, doc_token: str,
     st, jb = _api("GET", f"{domain}/open-apis/docx/v1/documents/{obj_token}/raw_content", token)
     if jb.get("code") not in (0, None) or st >= 400:
         return 4, {"ok": False, "error": f"raw_content failed: {jb.get('msg') or st} "
-                   f"(code={jb.get('code')})"}
+                   f"(code={jb.get('code')})", "denied": _classify(st, jb) == "denied"}
     text = (jb.get("data") or {}).get("content", "")
     if not title:
         title = (text.splitlines()[0].strip() if text.strip() else obj_token)
@@ -182,9 +174,20 @@ def _attach_media_urls(domain: str, token: str, images: list) -> None:
                     img["tmp_url"] = item.get("tmp_download_url", "")
 
 
+def _read_with_mode(domain, mode, kind, doc_token, want_comments, want_media):
+    token, mode_used, err = get_read_token(domain, mode)
+    if not token:
+        return 2, {"ok": False, "error": err, "mode": mode_used}, mode_used
+    code, res = read_document(domain, token, kind, doc_token, want_comments, want_media)
+    res["mode"] = mode_used
+    return code, res, mode_used
+
+
 def main(argv=None):
-    ap = argparse.ArgumentParser(description="Read a Lark wiki/docx document via the app token")
+    ap = argparse.ArgumentParser(description="Read a Lark wiki/docx document (dual-mode token)")
     ap.add_argument("url", help="Lark wiki/docx URL (or bare token)")
+    ap.add_argument("--mode", default=None, choices=["auto", "tenant", "user"],
+                    help="force a token mode; default = resolved read_mode from /qa:auth-lark")
     ap.add_argument("--no-comments", action="store_true", help="skip reading comments")
     ap.add_argument("--media-urls", action="store_true",
                     help="resolve temporary download URLs for inline images")
@@ -192,14 +195,27 @@ def main(argv=None):
 
     load_env()
     domain = env_str("LARK_DOMAIN", DEFAULT_DOMAIN).rstrip("/")
-    token, err = _get_token(domain)
-    if not token:
-        print(json.dumps({"ok": False, "error": err}, ensure_ascii=False))
+    avail = available_modes()
+    if not avail["tenant"] and not avail["user"]:
+        print(json.dumps({"ok": False, "error": "No Lark credentials configured — run "
+                          "/qa:setup-plugin then /qa:auth-lark (tenant) and/or "
+                          "/qa:auth-lark --login (user)."}, ensure_ascii=False))
         return 2
 
     kind, doc_token = parse_url(args.url)
-    code, res = read_document(domain, token, kind, doc_token,
-                              want_comments=not args.no_comments, want_media=args.media_urls)
+    code, res, mode_used = _read_with_mode(domain, args.mode, kind, doc_token,
+                                           not args.no_comments, args.media_urls)
+
+    # Fallback: chosen mode denied the doc → retry with the other configured mode.
+    if not res.get("ok") and res.get("denied"):
+        alt = other_mode(mode_used)
+        if avail.get(alt):
+            code2, res2, _ = _read_with_mode(domain, alt, kind, doc_token,
+                                             not args.no_comments, args.media_urls)
+            if res2.get("ok"):
+                res2["fallback_from"] = mode_used
+                code, res = code2, res2
+
     res.setdefault("source_url", args.url)
     print(json.dumps(res, indent=2, ensure_ascii=False))
     return code

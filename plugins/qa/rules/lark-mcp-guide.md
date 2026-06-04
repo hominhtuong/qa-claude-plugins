@@ -1,14 +1,48 @@
-# Lark MCP Usage Guide
+# Lark Access Guide (token modes + reading docs)
 
-Guide for using Lark MCP to read documents, comments, and media from Lark/Feishu.
+How the plugin reads documents, comments, and media from Lark/Feishu, and how
+commands/skills discover which token mode to use.
 
-## Token Mode
+## PREFERRED: read via the Python helper, NOT the MCP
 
-The MCP config uses `--token-mode auto`. Each API call can override via the `useUAT` param:
-- `useUAT: true` → User Access Token (scopes in the `user` section of `.mcp.json`)
-- `useUAT: false` or **omit** → Tenant Access Token (scopes in the `tenant` section)
+The Lark MCP frequently fails with `99991668 token expired` (it does not refresh).
+**Agents/commands should read Lark docs through `scripts/lark_read.py`**, which
+re-authenticates per run and handles both token modes + fallback:
 
-See the scope list at `.mcp.json` → `_scopes`.
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/lark_read.py" "<wiki_or_docx_url>" --media-urls
+# optional: --mode tenant|user (default = the resolved read_mode), --no-comments
+```
+
+It returns JSON: `title`, `obj_type`, `obj_token`, `text`, `images[]` (with `tmp_url`),
+`links[]`, `comments[]`, plus `mode` (which token was used) and `fallback_from` if it
+had to switch modes. The MCP sections below are reference/back-compat only.
+
+## Token modes (dual) + structured "lark info"
+
+Two ways to reach a doc, both configured in `.claude/qa-claude/.plugin.env` and verified
+by `/qa:auth-lark`:
+- **tenant** (app token) — `LARK_APP_ID`+`LARK_APP_SECRET`; the DOC must be shared with the APP. Default.
+- **user** (UAT) — OAuth login (`/qa:auth-lark --login`); the DOC must be visible to the USER.
+
+How commands/skills know which to use — they don't need to decide; `lark_read.py` resolves
+it. The resolution is recorded so anything can inspect it:
+- **env** (`.plugin.env`): `LARK_TOKEN_MODE` (preference: auto|tenant|user), `LARK_READ_MODE`
+  (resolved effective mode), `LARK_APP_CAPABILITIES`, `LARK_USER_CAPABILITIES`.
+- **state** (`.claude/qa-claude/lark-auth.state.json`): `read_mode`, `read_mode_reason`, and
+  `modes.{tenant,user}.capabilities` (per-mode ✅/❌ map).
+- **auto** preference picks the mode with more granted read scopes (tie → tenant); `lark_read.py`
+  also **falls back** to the other configured mode for any doc the chosen one is denied.
+
+If a read returns an auth/permission error, run `/qa:auth-lark` (or `--login` for user mode)
+to fix scopes — do NOT hardcode tokens.
+
+---
+
+## (Reference) MCP token param
+
+If using the MCP directly: config `--token-mode auto`; per call `useUAT: true` → User Access
+Token, `useUAT: false`/omit → Tenant Access Token. Scope list at `.mcp.json` → `_scopes`.
 
 ---
 
