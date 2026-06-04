@@ -4,23 +4,13 @@
     "name": "Mitu Ultra",
     "email": "support@mituultra.com"
   },
-  "description": "Open-source Claude Code plugins for every QA/QC engineer using AI: web/mobile automation, test-case generation, exploratory testing, review — packaged per plugin, install once and use across projects. Commands auto-route by platform (web/android/ios) and only load the matching skill.",
+  "description": "Open-source Claude Code plugin for every QA/QC engineer using AI: web/mobile automation, test-case generation, exploratory testing, review — one prefix-free plugin, install once and use across projects. Dual-purpose commands auto-detect automation vs manual mode and the right platform.",
   "version": "0.0.1",
   "plugins": [
     {
-      "name": "core",
-      "source": "./plugins/core",
-      "description": "Domain-agnostic shared skills/commands: help, status, ask, missing-test-ids + skills commit-push/build-verify/missing-ids/help-info."
-    },
-    {
-      "name": "auto",
-      "source": "./plugins/auto",
-      "description": "Multi-platform automation for Web (Playwright) + App (Appium iOS/Android). Commands auto-route by platform and only load the matching skill: find-elements/exploratory/plan-tests/cook/run/fix/review/push-code/merge-request."
-    },
-    {
-      "name": "qa-manual",
-      "source": "./plugins/qa-manual",
-      "description": "Manual QA: generate test cases to Sheet/xlsx (cook), plan-tests, analyze requirements, log-bug to Lark, count-cases — quality-checked, supports localized (e.g. Vietnamese) output."
+      "name": "qa",
+      "source": "./plugins/qa",
+      "description": "All-in-one QA toolkit (prefix-free commands). Automation: find-elements/exploratory/plan-tests/cook/run/fix/review/push-code/merge-request (Playwright Web + Appium iOS/Android). Manual QA: generate test cases to xlsx/Sheet, analyze specs, log-bug. Shared commands auto-detect automation/manual mode + web/android/ios platform. Optional Lark/Slack/Teams/Telegram notify + Cloudflare R2 / S3 report upload."
     }
   ]
 }

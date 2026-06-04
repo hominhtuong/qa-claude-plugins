@@ -1,0 +1,37 @@
+---
+name: help-info
+description: Skill that introduces & guides usage of the open-source qa plugin — lists the prefix-free commands, explains the mode router (automation vs manual) and platform router (web/android/ios reads only the matching skill), and the standard workflows (exploratory → plan-tests → cook → run → fix → review → push-code → merge-request for automation; analyze → plan-tests → cook → log-bug for manual). Used by the /help command, or when the user asks "how do I use this plugin / what commands are there / what skills are there".
+---
+
+# Skill: help-info
+
+Reusable capability: answer "what's in this QA plugin and how do I use it". When the caller (command `/help` or a user question) needs an overview → print the map below, then (if the user asks something specific) dig into the matching command/skill. Dynamically scan `${CLAUDE_PLUGIN_ROOT}/commands/*.md` + `skills/*/SKILL.md` to list **only what is actually installed** (don't invent non-existent commands).
+
+## One plugin, prefix-free commands
+Everything lives in a single `qa` plugin, so commands are called **bare** (no prefix): `/cook`, `/run`, `/fix`, `/merge-request`, `/log-bug`, `/status`. It covers BOTH:
+- **Automation** — Web (Playwright) + App (Appium iOS/Android). Commands **auto-route by platform**.
+- **Manual QA** — generate test cases into Sheet/xlsx, plan tests, analyze specs, log bugs to Lark.
+
+## Two routers (Step 0 of the dual-purpose commands)
+- **Mode router — `detect-mode`**: `cook`, `plan-tests`, `analyze`, `count-cases` serve both worlds → they first detect **automation** (write/run test code) vs **manual** (test cases / spec analysis). Override with `--auto`/`--manual`.
+- **Platform router — `detect-platform`** (automation branch): take the platform from the argument (`web|android|ios`), else auto-detect (playwright.config / android-capabilities / ios-capabilities), else ask. Then **read only 1 platform skill**:
+  - `find-elements` → `find-elements-web` | `-android` | `-ios`
+  - `cook` → `cook-web` | `cook-app` · `run` → `run-web` | `run-app` · `navigate` → `navigate-web` | `navigate-app`
+  - design/coding rules → `rules/web/*` | `rules/app/*`
+
+## Standard workflow — automation
+1. `/exploratory <feature> [platform]` — explore like a senior QA, hunt bugs, capture evidence, output a bug report. **GATE**: any `[APP-BUG]` → report to dev, stop (do not write tests).
+2. `/plan-tests <feature>` — design the test plan (only when exploratory is clean).
+3. `/find-elements <screen>` — extract locators if needed.
+4. `/cook <plan|requirement>` — write Page Object + test code.
+5. `/run [platform]` — run + triage failures (`[APP-BUG]` vs `[FRAMEWORK]`).
+6. `/fix <bug>` — fix the right layer (do not edit the test to dodge an `[APP-BUG]`).
+7. `/review-change` · `/review-codebase` — check against rules. → `/push-code` → `/merge-request`.
+
+## Standard workflow — manual QA
+`/analyze <spec>` → `/plan-tests <feature>` → `/cook <plan>` (generate test cases into Sheet/xlsx) → `/log-bug <description>`.
+
+## Shared / utility commands
+`/help` (this overview) · `/status` · `/ask` · `/missing-test-ids` · `/count-cases` · `/kill-appium`. Setup for optional integrations: skills `setup`/`doctor` (Lark/Slack/Teams/Telegram notify + Cloudflare R2 / S3 report upload).
+
+> Project override: a project's **local** `.claude/commands/<name>.md` (if same name) beats the plugin's bare command → projects can override without editing the plugin. Install / update: `/plugin marketplace update qa-claude` → `/reload-plugins`.

@@ -1,0 +1,7 @@
+{
+  "name": "qa",
+  "description": "All-in-one QA toolkit for Claude Code — every command is prefix-free. Automation (Playwright Web + Appium iOS/Android: find-elements/exploratory/plan-tests/cook/run/fix/review/push-code/merge-request) AND manual QA (generate test cases to xlsx/Sheet, log-bug). Dual-purpose commands (cook/plan-tests/analyze/count-cases) auto-detect mode (automation vs manual) and platform (web/android/ios), loading only the matching skill to save tokens.",
+  "version": "0.0.1",
+  "author": { "name": "Mitu Ultra", "email": "support@mituultra.com" },
+  "keywords": ["qa", "qc", "automation", "manual-testing", "playwright", "appium", "web", "mobile", "android", "ios", "testcase", "test-plan", "exploratory", "pom"]
+}
