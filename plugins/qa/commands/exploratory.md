@@ -15,7 +15,7 @@ Feature to explore: **$ARGUMENTS**
 > ⚠️ **Suspect the app by default**: every wrong/red observation **MUST** be triaged per [failure-triage.md](../rules/failure-triage.md): `[APP-BUG]` (app wrong — blocks tests) vs `[FRAMEWORK]` (our element capture/automation is wrong) vs `[ENV]`/`[DATA]`. Do NOT assume the app is correct.
 
 ## Step 0 — Lock platform (routing)
-Run **skill `detect-platform`** (argument/auto-detect/ask) → one `platform`. Determine the **group** (lowercase, e.g. `quản lý đơn` → `order`); read the sitemap (if any) to learn the path from Home.
+Run **skill `detect-platform`** (argument/auto-detect/ask) → one `platform`. Determine the **group** (lowercase, e.g. `quản lý đơn` → `order`); read `sitemap/sitemap.json` (if it exists) to learn the path from Home.
 
 ## Step 1 — Open the correct screen (only the locked platform skill)
 - **web** → skill **`navigate-web`** (Playwright MCP: navigate URL + login + back to Home → feature screen).
@@ -27,10 +27,13 @@ The full bug-hunting method (try the main interactions + open item detail + vali
 ## Step 2b — Cross-check against the design system (if a spec exists) — skill `design-conformance`
 Does the UI match the design system (color/typography/corner-radius/state tokens, touch target ≥48px). Deviation vs the design → `[APP-BUG]` *design deviation*. No component spec yet → `[NEEDS-TRIAGE]`, don't conclude. (Native apps make it hard to read color/font via element → check mainly via images.)
 
-## Step 3 — Extract elements (ONLY when the feature is clean)
-> Skip if the feature has a blocking `[APP-BUG]` (no test written yet means no Screen needed yet).
+## Step 2c — Record the navigation map (ALWAYS, even if buggy) — skill `update-sitemap`
+For **every screen you walked through** (Home → … → feature + sub-screens), write/update `sitemap/screens/<id>.json` with the `reach` steps (web: route + clicks · app: tap actions), `parentId`, `keyElement`, `route` (web) / `null` (app), `notes`. Then regenerate: `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/gen_sitemap.py`. This is a **first-class output** — it's how later cases find the path to the feature, so do it whether or not the feature is buggy.
 
-Open the correct find-elements skill per platform: **web** `find-elements-web` · **android** `find-elements-android` · **ios** `find-elements-ios` (app: spawn agent `source-inspector`). Elements missing id/testid → **skill `missing-ids`** (RECORD). Declare Screen/Page Object via skill `declare-screen` (no-assert) → **skill `build-verify`** green → **skill `update-sitemap`**.
+## Step 3 — Extract elements & build the Screen (ONLY when the feature is clean)
+> Skip if the feature has a blocking `[APP-BUG]` (no test written yet means no Screen needed yet — the sitemap node from Step 2c still stays).
+
+Open the correct find-elements skill per platform: **web** `find-elements-web` · **android** `find-elements-android` · **ios** `find-elements-ios` (app: spawn agent `source-inspector`). Elements missing id/testid → **skill `missing-ids`** (RECORD). Declare Screen/Page Object via skill `declare-screen` (no-assert) → **skill `build-verify`** green → refresh the sitemap node's `screenClass` (skill `update-sitemap`).
 
 ## Step 4 — Bug Report for dev (MAIN DELIVERABLE)
 Per `exploratory-method`: write `results/exploratory/<group>/dev-bug-report-<ddMMMyyyy>.md` following the template (each bug: Screen · Verbatim symptom · Root cause if found · Impact · Expectation · Evidence · Defect ID) + a **✅ Checked — NO bug** section + **❓ NEEDS-TRIAGE** + environment notes. Append each `[APP-BUG]` to the register `results/exploratory/bug-summary.md`.
@@ -39,4 +42,4 @@ Per `exploratory-method`: write `results/exploratory/<group>/dev-bug-report-<ddM
 - 🔴 **Has `[APP-BUG]`** → deliverable = bug report for dev. Do **NOT** `/qa:plan-tests`/`/qa:cook` for the broken part.
 - 🟢 **No `[APP-BUG]`** → app correct → Screen/elements extracted → suggest **`/qa:plan-tests <feature-name>`**.
 
-Close the session (`appium_quit_session` / `browser_close`). Print: platform, bug report path (+ register), list of `[APP-BUG]`, Screen/sitemap updated (if clean), **gate conclusion**.
+Close the session (`appium_quit_session` / `browser_close`). Print: platform, bug report path (+ register), list of `[APP-BUG]`, **sitemap nodes updated (always)** + Screen built (if clean), **gate conclusion**.

@@ -10,7 +10,7 @@ Reusable capability: from a feature **that passed a clean exploratory pass** →
 > 🚦 **Mandatory GATE — exploratory first, plan second**: only plan a feature/sub-feature **with no `[APP-BUG]`** (the `exploratory-method` skill). A feature that's broken → NO test plan, the deliverable is a bug report sent to dev. Large feature → gate per sub-feature.
 
 ## Procedure
-1. **Read the platform rules**: `../../rules/<platform>/design-pattern.md` (+ the corresponding coding-rules, design-system) — the command states clearly whether the platform is `web` or `app`. Read `sitemap/sitemap.md` + `screens/<group>/test-hints.json`.
+1. **Read the platform rules**: `../../rules/<platform>/design-pattern.md` (+ the corresponding coding-rules, design-system) — the command states clearly whether the platform is `web` or `app`. Read `sitemap/sitemap.json` + `screens/<group>/test-hints.json`.
 2. **Survey for reuse**: Glob the feature's existing Screen/Test → reuse `base`/`utils`/`actions`/`models`, no duplication. Element source: Screen.java → elements.json → (if missing) note "needs MCP/DOM discovery" for `/qa:cook` to run.
 3. **Write the file** `plans/<feature>/plan.md` (folder lowercase-hyphen; if it exists → update it) per the structure:
    - **Objective** — the feature's test goal.

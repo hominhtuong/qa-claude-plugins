@@ -18,7 +18,7 @@ Reusable capability: from a blank state → standing on the correct feature scre
    - MCP `appium_start_session` **CANNOT** use the `app_path` parameter to install (errors *"Either provide 'app' option… or set noReset true"*). → **Install manually**: `adb install -r -g <appPath>` then check `adb shell pm list packages | grep <appPackage>`.
    - `appPackage`/`appActivity` must match the actual APK — verify with `aapt dump badging <apk>` (`package: name=...`, `launchable-activity: name=...`). Wrong package → session starts but launch fails.
 4. **Start the session** with the **already-installed** app: `appium_start_session(platform=Android, device_name=<udid>, app_package=<pkg>, app_activity=<activity>)` — do NOT pass app_path. Default automationName = UiAutomator2 (reads Flutter semantics well via content-desc).
-5. **Check the sitemap first** (don't grope around): read `sitemap/sitemap.md` for the navigation path from Home to the feature screen, and the screen's characteristic element.
+5. **Check the sitemap first** (don't grope around): read `sitemap/sitemap.json` for the navigation path from Home to the feature screen, and the screen's characteristic element.
 6. **Ensure you are at Home** (example illustrating a typical Flutter login flow — swap labels/elements for your app):
    - Welcome → tap `accessibility "Bắt đầu ngay"` → phone-number entry screen.
    - Enter the phone number into `class_name android.widget.EditText` (input field has NO id) → tap `accessibility "Tiếp tục"`.

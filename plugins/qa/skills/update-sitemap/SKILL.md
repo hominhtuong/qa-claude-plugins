@@ -1,17 +1,30 @@
 ---
 name: update-sitemap
-description: Reusable logic to update the screen map (sitemap) + element catalog whenever a screen is touched. Used when a command (exploratory, cook) has just created/edited a Screen or discovered an element via MCP. Update elements.json + test-hints.json + sitemap.md then regenerate with the script. plan only lists the nodes to be touched.
+description: Reusable logic to keep the project's navigation sitemap in sync — write/update sitemap/screens/<id>.json (source of truth: route + edges parent→child + keyElement + reach steps + notes) for any screen a command visits or builds, then regenerate sitemap/sitemap.json with the plugin's gen_sitemap.py. Used by exploratory (EVERY screen visited) and cook (every Screen built). Web stores route+clicks; app (Appium) stores tap steps. plan-tests only LISTS nodes, never writes.
 ---
 
 # Skill: update-sitemap
 
-Reusable capability: keep the navigation map in sync with the code, so the AI navigates correctly next time. Sitemap system: [design-pattern §5](../../rules/app/design-pattern.md). Details: `sitemap/README.md`.
+Keep the navigation map current so the AI — and every later case — knows how to reach any screen. Schema: `sitemap/SCHEMA.md` (auto-created on first generate). Source of truth = `sitemap/screens/<id>.json` (one file per screen); the aggregate `sitemap/sitemap.json` is **generated**, never hand-edited.
 
-## Procedure (Auto-Update Rule — after MCP discovery / element change)
-1. **`screens/<group>/elements.json`** — add/update the locator of a newly discovered element (the source for the 3-layer Layer 2 lookup).
-2. **`screens/<group>/test-hints.json`** — if a new form field is discovered: add the field metadata, validation, business rule (for `/qa:plan-tests`, `/qa:cook`).
-3. **`sitemap/sitemap.md`** — add a new screen entry to the navigation index (screen name, path from Home, entry points, characteristic element). Existing screen with a new element → update it.
-4. **Screenshot** (if captured via MCP): save to `sitemap/screenshots/<name>.jpg` (JPG, not PNG; don't leave it on the Desktop).
-5. **Regenerate**: `python3 sitemap/scripts/gen_sitemap_v2.py` (sitemap.md) + `python3 sitemap/scripts/gen_test_hints.py` (test-hints.json).
+## When to run
+- **`/qa:exploratory`** → for **EVERY screen you visit**, add/update its node — even before a Screen class exists. The `reach` steps are the whole point (later cases navigate by them).
+- **`/qa:cook`** → when a Screen/Page Object is created/edited, set/refresh `screenClass` + `keyElement`.
+- **`/qa:plan-tests`** → do NOT write files; only **LIST** the nodes to create/update in the plan.
 
-> At `/qa:plan-tests`: do NOT write files — only **list** the nodes/screens to create/update (path from Home, key element) in the plan for `/qa:cook` to execute later.
+## Procedure
+1. **Write/update `sitemap/screens/<id>.json`** (`<id>` = kebab-case screen/feature, **== the filename**). Fill per `sitemap/SCHEMA.md`:
+   - `id`, `realName`, `testFeature`, `platform` (`web`|`android`|`ios`).
+   - `route` — **web**: the URL/path. **app**: `null` (navigation is by tap → put it in `reach`).
+   - `parentId` — the screen you came FROM (this is the edge; `null` for root). `keyElement` — the `isDisplayed()` anchor.
+   - `reach` — step-by-step navigation to GET here. **web**: route + clicks (e.g. `"click sidebar 'Invoices'"`). **app**: tap actions (e.g. `"tap tab 'Kho'"`, `"tap row 0"`). Start from `GoToHome` unless pre-login.
+   - `screenClass` (FQN once built, else `null`), `home` (bool), `notes` (selectors / status `verified <date>` / bugs / TODOs).
+   - One screen = one file → low merge conflict. Edit only the files for the feature you touched. `childrenIds` are auto-derived from `parentId` (you don't need to set them).
+2. **(App POM, optional)** if you also captured locators, keep them in the element source per the app design-pattern (`screens/<group>/elements.json` / `test-hints.json`) — that's the POM element catalog, separate from this navigation sitemap.
+3. **Regenerate the aggregate** (rebuilds `sitemap.json` + ensures `SCHEMA.md`):
+   - macOS/Linux: `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/gen_sitemap.py`
+   - Windows: `python ${CLAUDE_PLUGIN_ROOT}/scripts/gen_sitemap.py`
+   It auto-links `childrenIds`, warns on dangling `parentId` / id≠filename / bad JSON (non-fatal).
+4. **Screenshot** (optional, if captured via MCP): `sitemap/screenshots/<id>.jpg` (JPG, not PNG; not on the Desktop).
+
+> The sitemap is a first-class output of `/qa:exploratory` — record it for every screen you walk through, even when the feature is buggy and no test gets written. The next command reads it to find the path to the feature.

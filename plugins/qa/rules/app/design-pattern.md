@@ -72,14 +72,16 @@ public boolean isDisplayed() {
 
 ## 5. Sitemap (for AI navigation) — read BEFORE every task
 
+Per-screen JSON map (same schema as web). Schema: `sitemap/SCHEMA.md`.
+
 ```
-sitemap/sitemap.md          → ALWAYS READ: navigation index, screen lookup, entry points
-sitemap/test-playbook.md    → READ WHEN PLANNING: test patterns + cross-screen journeys
-screens/<group>/test-hints.json → READ WHEN IMPLEMENTING: field metadata + business rules
-screens/<group>/elements.json   → READ WHEN CODING: element locators (MCP-managed)
+sitemap/screens/<id>.json   → SOURCE OF TRUTH (one file/screen): route(null for app) + parentId edge + keyElement + reach (tap steps) + screenClass + notes
+sitemap/sitemap.json        → GENERATED aggregate (navigation index/lookup) — do NOT hand-edit
+screens/<group>/test-hints.json → READ WHEN IMPLEMENTING: field metadata + business rules (POM)
+screens/<group>/elements.json   → READ WHEN CODING: element locators (MCP-managed) (POM)
 sitemap/screenshots/        → multimodal reference (JPG/screen)
 ```
-**Auto-update** after MCP discovery / element change (skill `update-sitemap`): update `elements.json`, `test-hints.json`, `sitemap/sitemap.md`, then regenerate with `python3 sitemap/scripts/gen_sitemap_v2.py` + `gen_test_hints.py`. Detail: `sitemap/README.md`.
+**Auto-update** for every screen visited/touched (skill `update-sitemap`): write `sitemap/screens/<id>.json` (+ POM `elements.json`/`test-hints.json` when coding), then regenerate with `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/gen_sitemap.py`.
 
 ## 6. Package-by-feature (conflict avoidance)
 
