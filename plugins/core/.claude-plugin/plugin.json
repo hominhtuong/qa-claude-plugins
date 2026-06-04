@@ -1,0 +1,7 @@
+{
+  "name": "core",
+  "description": "Skill/command QA dùng chung mọi project (domain-agnostic): commit-push, build-verify, missing-ids + commands status/ask/missing-test-ids.",
+  "version": "0.1.0",
+  "author": { "name": "Finan QA", "email": "tech-qc@banhang.store" },
+  "keywords": ["qa", "automation", "git", "build", "shared"]
+}

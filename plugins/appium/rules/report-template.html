@@ -1,0 +1,326 @@
+<!--
+  TEST CASE REPORT TEMPLATE
+  ==========================
+  Template HTML report cho test case automation mapping.
+  Claude Code su dung template nay khi user yeu cau tao report cho bat ky module nao.
+
+  HUONG DAN SU DUNG:
+  - Thay {{MODULE_NAME}} bang ten module (vd: "Customer", "Product", "Sales")
+  - Thay {{DATE}} bang ngay tao (vd: "2026-03-19")
+  - Thay {{TOTAL}}, {{AUTO}}, {{MANUAL}}, {{RATE}} bang so lieu thuc te
+  - Thay {{GROUPS}} bang cac group test case (tab + table)
+  - Thay {{BARS}} bang bar chart data
+  - Thay {{MISSING_IDS}} bang Missing ID Report rows
+  - Thay {{APP_DEFECTS}} bang Defect Summary rows ([APP-BUG] — xem ${CLAUDE_PLUGIN_ROOT}/rules/failure-triage.md)
+  - Thay {{TESTNG_FILES}} bang ten file TestNG XML
+
+  TRIAGE (failure-triage.md): moi test case co the gan nhan ket qua —
+  Pass | App-bug (loi app) | Framework (loi bat element) | Env/Data | Needs-triage.
+  Phai phan dinh ro "loi app" vs "loi du an bat element". [APP-BUG] gom vao Defect Summary de chuyen dev.
+
+  DONUT CHART TINH TOAN:
+  - Chu vi hinh tron = 2 * pi * r = 2 * 3.14159 * 70 = ~440
+  - auto_dash = (auto / total) * 440
+  - manual_dash = (manual / total) * 440
+  - manual_offset = -auto_dash
+
+  OUTPUT: docs/<module>-testcase-report.html
+-->
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{MODULE_NAME}} Test Cases — Automation Report</title>
+<style>
+  :root {
+    --bg: #0f172a;
+    --card: #1e293b;
+    --border: #334155;
+    --text: #e2e8f0;
+    --text-muted: #94a3b8;
+    --accent: #38bdf8;
+    --green: #34d399;
+    --red: #f87171;
+    --yellow: #fbbf24;
+    --purple: #a78bfa;
+    --green-bg: rgba(52,211,153,.12);
+    --red-bg: rgba(248,113,113,.12);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Segoe UI',system-ui,-apple-system,sans-serif; background:var(--bg); color:var(--text); line-height:1.6; }
+  .container { max-width:1360px; margin:0 auto; padding:24px 20px; }
+
+  /* Header */
+  .header { text-align:center; padding:40px 0 32px; }
+  .header h1 { font-size:28px; font-weight:700; letter-spacing:-.5px; margin-bottom:8px; }
+  .header h1 span { color:var(--accent); }
+  .header .subtitle { color:var(--text-muted); font-size:14px; }
+
+  /* Stats Cards */
+  .stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:16px; margin-bottom:32px; }
+  .stat-card { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:20px; text-align:center; }
+  .stat-card .number { font-size:36px; font-weight:800; line-height:1; }
+  .stat-card .label { font-size:12px; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; margin-top:6px; }
+  .stat-card.total .number { color:var(--accent); }
+  .stat-card.auto .number { color:var(--green); }
+  .stat-card.manual .number { color:var(--red); }
+  .stat-card.rate .number { color:var(--yellow); }
+
+  /* Donut Chart */
+  .chart-section { display:flex; align-items:center; justify-content:center; gap:40px; margin-bottom:36px; flex-wrap:wrap; }
+  .donut-wrap { position:relative; width:180px; height:180px; }
+  .donut-wrap svg { transform:rotate(-90deg); }
+  .donut-center { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+  .donut-center .pct { font-size:32px; font-weight:800; color:var(--green); }
+  .donut-center .sub { font-size:11px; color:var(--text-muted); }
+  .chart-legend { display:flex; flex-direction:column; gap:10px; }
+  .legend-item { display:flex; align-items:center; gap:10px; font-size:14px; }
+  .legend-dot { width:12px; height:12px; border-radius:50%; flex-shrink:0; }
+
+  /* Category Breakdown */
+  .breakdown { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:24px; margin-bottom:32px; }
+  .breakdown h3 { font-size:16px; margin-bottom:16px; color:var(--accent); }
+  .bar-row { display:flex; align-items:center; gap:12px; margin-bottom:10px; font-size:13px; }
+  .bar-label { width:200px; flex-shrink:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .bar-track { flex:1; height:24px; background:rgba(255,255,255,.06); border-radius:6px; overflow:hidden; }
+  .bar-fill { height:100%; border-radius:6px; display:flex; align-items:center; padding-left:8px; font-size:11px; font-weight:600; color:#fff; min-width:32px; background:linear-gradient(90deg,#059669,#34d399); }
+  .bar-nums { width:80px; text-align:right; flex-shrink:0; color:var(--text-muted); font-size:12px; }
+
+  /* Tabs */
+  .tabs { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:20px; }
+  .tab-btn { background:var(--card); border:1px solid var(--border); border-radius:8px; padding:8px 16px; font-size:13px; color:var(--text-muted); cursor:pointer; transition:.2s; }
+  .tab-btn:hover { border-color:var(--accent); color:var(--text); }
+  .tab-btn.active { background:var(--accent); color:#0f172a; border-color:var(--accent); font-weight:600; }
+  .tab-content { display:none; }
+  .tab-content.active { display:block; }
+
+  /* Table */
+  .table-wrap { background:var(--card); border:1px solid var(--border); border-radius:12px; overflow:hidden; margin-bottom:24px; }
+  .table-wrap h3 { padding:16px 20px 12px; font-size:15px; border-bottom:1px solid var(--border); }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  thead th { background:rgba(255,255,255,.04); padding:10px 14px; text-align:left; font-weight:600; color:var(--text-muted); font-size:11px; text-transform:uppercase; letter-spacing:.5px; position:sticky; top:0; }
+  tbody td { padding:10px 14px; border-top:1px solid var(--border); vertical-align:top; }
+  tbody tr:hover { background:rgba(255,255,255,.03); }
+  .badge { display:inline-block; padding:2px 10px; border-radius:20px; font-size:11px; font-weight:600; }
+  .badge.auto { background:var(--green-bg); color:var(--green); }
+  .badge.manual { background:var(--red-bg); color:var(--red); }
+  /* Triage badges (failure-triage.md) */
+  .badge.pass { background:var(--green-bg); color:var(--green); }
+  .badge.appbug { background:var(--red-bg); color:var(--red); }
+  .badge.framework { background:rgba(251,191,36,.12); color:var(--yellow); }
+  .badge.envdata { background:rgba(148,163,184,.12); color:var(--text-muted); }
+  .badge.triage { background:rgba(167,139,250,.12); color:var(--purple); }
+  .mono { font-family:'Cascadia Code','Fira Code',monospace; font-size:12px; color:var(--purple); }
+  .note { color:var(--text-muted); font-size:12px; font-style:italic; }
+
+  /* Missing ID */
+  .missing-id { background:linear-gradient(135deg,rgba(251,191,36,.08),rgba(248,113,113,.08)); border:1px solid rgba(251,191,36,.25); border-radius:12px; padding:20px; margin-bottom:32px; }
+  .missing-id h3 { color:var(--yellow); font-size:15px; margin-bottom:12px; }
+  .missing-id table { font-size:12px; }
+
+  /* Run commands */
+  .commands { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:20px; margin-bottom:24px; }
+  .commands h3 { font-size:15px; margin-bottom:12px; color:var(--accent); }
+  .cmd { background:rgba(0,0,0,.3); border-radius:8px; padding:12px 16px; font-family:'Cascadia Code','Fira Code',monospace; font-size:13px; color:var(--green); margin-bottom:8px; }
+  .cmd .comment { color:var(--text-muted); }
+
+  /* Footer */
+  .footer { text-align:center; padding:24px 0; color:var(--text-muted); font-size:12px; border-top:1px solid var(--border); margin-top:32px; }
+
+  @media(max-width:768px) {
+    .stats { grid-template-columns:repeat(2,1fr); }
+    .bar-label { width:120px; }
+    table { font-size:12px; }
+    thead th, tbody td { padding:8px 10px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<!-- ==================== HEADER ==================== -->
+<div class="header">
+  <h1>{{MODULE_NAME}} Test Cases — <span>Automation Report</span></h1>
+  <div class="subtitle">Module: {{MODULE_NAME}} | Generated: {{DATE}} | Framework: Appium + TestNG + Page Object Model</div>
+</div>
+
+<!-- ==================== STATS CARDS ==================== -->
+<div class="stats">
+  <div class="stat-card total"><div class="number">{{TOTAL}}</div><div class="label">Total Test Cases</div></div>
+  <div class="stat-card auto"><div class="number">{{AUTO}}</div><div class="label">Automated</div></div>
+  <div class="stat-card manual"><div class="number">{{MANUAL}}</div><div class="label">Manual Only</div></div>
+  <div class="stat-card rate"><div class="number">{{RATE}}%</div><div class="label">Automation Rate</div></div>
+</div>
+
+<!-- ==================== DONUT CHART ====================
+     Tinh toan:
+     - circumference = 440 (2 * pi * 70)
+     - auto_dash = (AUTO / TOTAL) * 440
+     - manual_dash = (MANUAL / TOTAL) * 440
+     - manual_offset = -auto_dash
+-->
+<div class="chart-section">
+  <div class="donut-wrap">
+    <svg viewBox="0 0 180 180">
+      <circle cx="90" cy="90" r="70" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="20"/>
+      <circle cx="90" cy="90" r="70" fill="none" stroke="#34d399" stroke-width="20"
+              stroke-dasharray="{{AUTO_DASH}} 440" stroke-linecap="round"/>
+      <circle cx="90" cy="90" r="70" fill="none" stroke="#f87171" stroke-width="20"
+              stroke-dasharray="{{MANUAL_DASH}} 440" stroke-dashoffset="-{{AUTO_DASH}}" stroke-linecap="round"/>
+    </svg>
+    <div class="donut-center">
+      <div class="pct">{{RATE}}%</div>
+      <div class="sub">Auto Rate</div>
+    </div>
+  </div>
+  <div class="chart-legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#34d399"></div>Automated: {{AUTO}} TCs ({{RATE}}%)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#f87171"></div>Manual: {{MANUAL}} TCs ({{MANUAL_RATE}}%)</div>
+    <!-- Them legend items neu can -->
+  </div>
+</div>
+
+<!-- ==================== CATEGORY BREAKDOWN ====================
+     Moi category 1 bar-row. Thay {{BAR_LABEL}}, {{BAR_PCT}}, {{BAR_NUMS}}
+-->
+<div class="breakdown">
+  <h3>Automation Rate by Category</h3>
+
+  <!-- TEMPLATE cho moi category:
+  <div class="bar-row">
+    <div class="bar-label">{{GROUP_NAME}}</div>
+    <div class="bar-track">
+      <div class="bar-fill" style="width:{{BAR_PCT}}%">{{BAR_PCT}}%</div>
+    </div>
+    <div class="bar-nums">{{AUTO_COUNT}}/{{TOTAL_COUNT}}</div>
+  </div>
+  -->
+
+  {{BARS}}
+</div>
+
+<!-- ==================== TABS ====================
+     Moi group 1 tab button + 1 tab-content.
+     Tab dau tien co class "active".
+-->
+<div class="tabs" id="tabs">
+  {{TAB_BUTTONS}}
+  <!-- TEMPLATE:
+  <button class="tab-btn active" onclick="showTab('g1')">Group 1 (N)</button>
+  <button class="tab-btn" onclick="showTab('g2')">Group 2 (N)</button>
+  -->
+</div>
+
+<!-- ==================== TAB CONTENT ====================
+     Moi group 1 div.tab-content chua 1 table.
+     Tab dau tien co class "active".
+-->
+
+<!-- TEMPLATE cho moi group:
+<div class="tab-content active" id="g1">
+<div class="table-wrap">
+<h3>Group 1: Ten nhom — N TCs (M auto)</h3>
+<table>
+<thead><tr><th>TC</th><th>Description</th><th>isAuto</th><th>Test Class</th><th>Method</th><th>Triage</th><th>Notes</th></tr></thead>
+<tbody>
+
+  ROW - Auto (Triage: pass | appbug | framework | envdata | triage — failure-triage.md):
+  <tr>
+    <td>TC1</td>
+    <td>Mo ta test case</td>
+    <td><span class="badge auto">Auto</span></td>
+    <td class="mono">TestClassName</td>
+    <td class="mono">methodName</td>
+    <td><span class="badge pass">Pass</span></td>
+    <td></td>
+  </tr>
+
+  ROW - App bug (loi app, KHONG sua test cho pass):
+  <tr>
+    <td>TC9</td>
+    <td>Mo ta test case</td>
+    <td><span class="badge auto">Auto</span></td>
+    <td class="mono">TestClassName</td>
+    <td class="mono">methodName</td>
+    <td><span class="badge appbug">App-bug</span></td>
+    <td class="note">[APP-BUG] mo ta loi + chuyen dev</td>
+  </tr>
+
+  ROW - Manual:
+  <tr>
+    <td>TC2</td>
+    <td>Mo ta test case</td>
+    <td><span class="badge manual">Manual</span></td>
+    <td>—</td>
+    <td>—</td>
+    <td class="note">Ly do khong auto</td>
+  </tr>
+
+</tbody>
+</table>
+</div>
+</div>
+-->
+
+{{GROUPS}}
+
+<!-- ==================== DEFECT SUMMARY ([APP-BUG]) ====================
+     Liet ke loi APP phat hien (phan dinh voi loi framework — failure-triage.md).
+     Day la phan QA chuyen dev. Xoa section neu khong co [APP-BUG].
+-->
+<div class="missing-id" style="border-color:rgba(248,113,113,.3)">
+  <h3 style="color:var(--red)">Defect Summary — [APP-BUG] loi ung dung (phan dinh voi loi bat element)</h3>
+  <table>
+  <thead><tr><th>#</th><th>Man hinh</th><th>Ky vong (SBH Reactive/spec)</th><th>Thuc te</th><th>Muc do</th><th>Buoc tai hien</th></tr></thead>
+  <tbody>
+  <!-- TEMPLATE:
+  <tr><td>1</td><td>ScreenName</td><td>Ky vong dung</td><td>Hanh vi sai/loi</td><td><span class="badge appbug">Critical</span></td><td>Buoc 1..n</td></tr>
+  -->
+  {{APP_DEFECTS}}
+  </tbody>
+  </table>
+</div>
+
+<!-- ==================== MISSING ID REPORT ====================
+     Chi hien thi neu co element khong dung id.
+     Xoa section nay neu tat ca element deu co id.
+-->
+<div class="missing-id">
+  <h3>Missing ID Report — Cac element chua co ID, can yeu cau dev bo sung</h3>
+  <table>
+  <thead><tr><th>Element</th><th>Man hinh</th><th>Locator hien tai</th><th>Mo ta</th></tr></thead>
+  <tbody>
+  <!-- TEMPLATE:
+  <tr><td>elementName</td><td>ScreenName</td><td class="mono">xpath / uiautomator / accessibility</td><td>Mo ta</td></tr>
+  -->
+  {{MISSING_IDS}}
+  </tbody>
+  </table>
+</div>
+
+<!-- ==================== RUN COMMANDS ==================== -->
+<div class="commands">
+  <h3>Run Commands</h3>
+  <!-- TEMPLATE:
+  <div class="cmd"><span class="comment"># Mo ta</span><br>mvn test -DsuiteXmlFile={{TESTNG_FILE}}</div>
+  -->
+  {{RUN_COMMANDS}}
+</div>
+
+<div class="footer">
+  Generated by Claude Code — Appium Shinhan QA Automation Framework
+</div>
+
+</div>
+
+<script>
+function showTab(id) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  event.target.classList.add('active');
+}
+</script>
+</body>
+</html>

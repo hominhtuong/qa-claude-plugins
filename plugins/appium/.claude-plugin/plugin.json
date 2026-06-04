@@ -1,0 +1,7 @@
+{
+  "name": "appium",
+  "description": "Bộ automation mobile Appium Java + TestNG + POM (Android/iOS/Flutter): cook/plan/fix/exploratory/run + skills (capture-elements, declare-screen, mcp-navigate, review-audit, fix-by-layer...) + rules + agents discovery.",
+  "version": "0.1.0",
+  "author": { "name": "Finan QA", "email": "tech-qc@banhang.store" },
+  "keywords": ["qa", "appium", "mobile", "flutter", "android", "ios", "testng", "pom"]
+}

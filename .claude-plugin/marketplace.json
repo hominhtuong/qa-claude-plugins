@@ -1,0 +1,21 @@
+{
+  "name": "qa-claude",
+  "owner": {
+    "name": "Finan QA",
+    "email": "tech-qc@banhang.store"
+  },
+  "description": "Marketplace dùng chung cho các project automation QA của Finan — commands/skills/rules/agents đóng gói theo plugin, sửa 1 nơi update mọi project.",
+  "version": "0.1.0",
+  "plugins": [
+    {
+      "name": "core",
+      "source": "./plugins/core",
+      "description": "Skill/command dùng chung mọi project (git, build-verify, missing-test-ids, status, ask) — domain-agnostic."
+    },
+    {
+      "name": "appium",
+      "source": "./plugins/appium",
+      "description": "Bộ automation mobile Appium (Android/iOS/Flutter): cook/plan/fix/exploratory/run + skills POM + rules + agents discovery."
+    }
+  ]
+}
