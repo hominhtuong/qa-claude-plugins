@@ -1,30 +1,30 @@
 ---
 name: missing-ids
-description: Logic tái dùng để quản lý "nợ test-id" — element trong Screen chưa neo được bằng id (đang tạm dùng accessibility/uiautomator/xpath/text). Ba năng lực: RECORD (gom element thiếu id vào Missing ID Report), EXPORT (chạy scripts/export_missing_ids.py gom toàn dự án gửi dev), RESOLVE (khi dev đã gắn id). Dùng bởi cook/fix/exploratory/review-* hoặc chạy độc lập qua command missing-test-ids.
+description: Reusable logic to manage "test-id debt" — elements in a Screen that cannot yet be anchored by id (temporarily using accessibility/uiautomator/xpath/text). Three capabilities: RECORD (collect elements missing an id into the Missing ID Report), EXPORT (run scripts/export_missing_ids.py to collect across the whole project to send to dev), RESOLVE (when dev has added the id). Used by cook/fix/exploratory/review-* or run standalone via the missing-test-ids command.
 ---
 
 # Skill: missing-ids
 
-Năng lực tái dùng: ghi/liệt kê/export element thiếu `id` để QA yêu cầu dev bổ sung. Vì sao tồn tại: neo bền nhất là `resource-id`/`accessibilityId`; locator theo text/xpath/uiautomator dễ vỡ khi đổi UI/đa ngôn ngữ. Chuẩn (rule tĩnh): [coding-rules.md §Missing ID Report](../../rules/coding-rules.md), checklist mục tương ứng [review-checklist.md](../../rules/review-checklist.md).
+Reusable capability: record/list/export elements missing an `id` so QA can ask dev to add it. Why it exists: the most durable anchor is `resource-id`/`accessibilityId`; locators by text/xpath/uiautomator break easily on UI changes / i18n. Standard (static rule): [coding-rules.md §Missing ID Report](../../rules/coding-rules.md), the matching checklist item in [review-checklist.md](../../rules/review-checklist.md).
 
-## Năng lực 1 — RECORD (caller gọi khi khai báo element)
-Khi `declare-screen`/`cook`/`fix` khai báo cho Screen một element **không** neo được bằng `id`:
-1. Tạm dùng locator ổn nhất (priority `accessibility` > `uiautomator` > `xpath`).
-2. Gom vào **Missing ID Report** (bảng output cuối task) — KHÔNG report element đã có `id`:
+## Capability 1 — RECORD (caller invokes when declaring an element)
+When `declare-screen`/`cook`/`fix` declares an element for a Screen that **cannot** be anchored by `id`:
+1. Temporarily use the most stable locator (priority `accessibility` > `uiautomator` > `xpath`).
+2. Collect it into the **Missing ID Report** (the output table at the end of the task) — do NOT report elements that already have an `id`:
 ```
-⚠️ **Missing ID Report** — Các element chưa có ID, cần yêu cầu dev bổ sung:
+⚠️ **Missing ID Report** — Elements without an ID, dev needs to add them:
 
-| Tên element | Vị trí / Màn hình | Locator hiện tại | Mô tả |
+| Element name | Location / Screen | Current locator | Description |
 |-------------|-------------------|-------------------|-------|
-| termsText   | Onboarding        | uiautomator: `new UiSelector().description("Tôi đồng ý với ")` | Checkbox điều khoản |
+| termsText   | Onboarding        | uiautomator: `new UiSelector().description("Tôi đồng ý với ")` | Terms checkbox |
 ```
 
-## Năng lực 2 — EXPORT (chạy độc lập hoặc cuối exploratory/cook)
-1. Chạy `python3 scripts/export_missing_ids.py` — quét toàn bộ `screens/<group>/*.java` + `elements.json`, gom element dùng locator non-id.
-2. In summary: số màn quét, tổng element thiếu id (phân theo loại locator), đường dẫn file output.
-3. Đây là tài liệu gửi dev để gắn `resource-id`/`accessibilityId`.
+## Capability 2 — EXPORT (run standalone or at the end of exploratory/cook)
+1. Run `python3 scripts/export_missing_ids.py` — scan all `screens/<group>/*.java` + `elements.json`, collect elements using non-id locators.
+2. Print summary: number of screens scanned, total elements missing an id (broken down by locator type), path to the output file.
+3. This is the document sent to dev to add `resource-id`/`accessibilityId`.
 
-## Năng lực 3 — RESOLVE (sau khi dev gắn id)
-Dev gắn id → đổi locator field sang `@MobileFindBy(id = "...")` trong Screen + cập nhật `elements.json` → chạy lại EXPORT để danh sách co lại. Verify compile xanh qua skill `build-verify`.
+## Capability 3 — RESOLVE (after dev adds the id)
+Dev adds the id → switch the locator field to `@MobileFindBy(id = "...")` in the Screen + update `elements.json` → re-run EXPORT so the list shrinks. Verify the compile is green via skill `build-verify`.
 
-> Skill này tham chiếu rule, không nhân bản. Caller: skill `declare-screen`, command `/cook` `/fix` `/exploratory` `/review-*` `/missing-test-ids`.
+> This skill references rules, it does not duplicate them. Callers: skill `declare-screen`, commands `/cook` `/fix` `/exploratory` `/review-*` `/missing-test-ids`.

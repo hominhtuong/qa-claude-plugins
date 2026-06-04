@@ -1,0 +1,7 @@
+{
+  "name": "auto",
+  "description": "Multi-platform automation for Web (Playwright) + App (Appium iOS/Android). Every command auto-routes by platform (detect-platform) then loads only the matching skill to save tokens: find-elements/exploratory/plan-tests/cook/run/fix/review/push-code/merge-request + skills split by web/android/ios + rules/web|app + discovery agents.",
+  "version": "0.0.1",
+  "author": { "name": "Mitu Ultra", "email": "support@mituultra.com" },
+  "keywords": ["qa", "automation", "playwright", "appium", "web", "mobile", "android", "ios", "flutter", "pom", "multi-platform"]
+}

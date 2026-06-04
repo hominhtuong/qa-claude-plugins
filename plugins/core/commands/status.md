@@ -1,9 +1,9 @@
 ---
-description: Tổng quan nhanh trạng thái dự án (git, devices, Appium, coverage)
+description: Quick overview of the project state (git, devices, Appium, coverage)
 allowed-tools: Read, Glob, Grep, Bash
 ---
 
-# /status — Trạng thái dự án
+# /status — Project Status
 
 You are a QA Project Status Reporter. Give a quick overview of the project's current state.
 

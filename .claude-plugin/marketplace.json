@@ -1,21 +1,26 @@
 {
   "name": "qa-claude",
   "owner": {
-    "name": "Finan QA",
-    "email": "tech-qc@banhang.store"
+    "name": "Mitu Ultra",
+    "email": "support@mituultra.com"
   },
-  "description": "Marketplace dùng chung cho các project automation QA của Finan — commands/skills/rules/agents đóng gói theo plugin, sửa 1 nơi update mọi project.",
-  "version": "0.1.0",
+  "description": "Open-source Claude Code plugins for every QA/QC engineer using AI: web/mobile automation, test-case generation, exploratory testing, review — packaged per plugin, install once and use across projects. Commands auto-route by platform (web/android/ios) and only load the matching skill.",
+  "version": "0.0.1",
   "plugins": [
     {
       "name": "core",
       "source": "./plugins/core",
-      "description": "Skill/command dùng chung mọi project (git, build-verify, missing-test-ids, status, ask) — domain-agnostic."
+      "description": "Domain-agnostic shared skills/commands: help, status, ask, missing-test-ids + skills commit-push/build-verify/missing-ids/help-info."
     },
     {
-      "name": "appium",
-      "source": "./plugins/appium",
-      "description": "Bộ automation mobile Appium (Android/iOS/Flutter): cook/plan/fix/exploratory/run + skills POM + rules + agents discovery."
+      "name": "auto",
+      "source": "./plugins/auto",
+      "description": "Multi-platform automation for Web (Playwright) + App (Appium iOS/Android). Commands auto-route by platform and only load the matching skill: find-elements/exploratory/plan-tests/cook/run/fix/review/push-code/merge-request."
+    },
+    {
+      "name": "qa-manual",
+      "source": "./plugins/qa-manual",
+      "description": "Manual QA: generate test cases to Sheet/xlsx (cook), plan-tests, analyze requirements, log-bug to Lark, count-cases — quality-checked, supports localized (e.g. Vietnamese) output."
     }
   ]
 }

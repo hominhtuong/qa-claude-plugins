@@ -1,20 +1,20 @@
 ---
 name: commit-push
-description: Logic tái dùng để commit & push an toàn — không bao giờ push thẳng main/master (tự tạo branch feat/<slug>), commit theo Conventional Commits kèm trailer Co-Authored-By, push -u không force. Dùng bởi push-code và merge-request sau khi code đã sạch + build xanh. Chỉ chạy khi người dùng yêu cầu.
+description: Reusable logic to commit & push safely — never push directly to main/master (auto-creates a feat/<slug> branch), commit per Conventional Commits with a Co-Authored-By trailer, push -u without force. Used by push-code and merge-request after the code is clean + build is green. Runs only when the user requests it.
 ---
 
 # Skill: commit-push
 
-Năng lực tái dùng: đưa thay đổi đã sạch lên origin một cách an toàn. Chỉ chạy **sau** khi `review-audit` sạch Critical và `build-verify` xanh, và **chỉ khi người dùng yêu cầu**.
+Reusable capability: get clean changes onto origin safely. Runs **only after** `review-audit` is clean of Critical and `build-verify` is green, and **only when the user requests it**.
 
-## Thủ tục
-1. **Xác định branch**: `git branch --show-current`.
-   - Đang ở **default branch** (`main`/`master`) → **KHÔNG push thẳng**. Tạo branch feature `feat/<slug>` (suy từ diff, hoặc hỏi tên nếu không rõ) → `git switch -c <branch>`.
-   - Branch khác → giữ nguyên.
-2. **Stage**: `git add` file trong phạm vi; tránh add file rác/secret (đối chiếu `.gitignore` — không add `reports/`, token, `.properties` chứa secret).
-3. **Commit message**: dùng tham số nếu có; trống → tự sinh Conventional Commit ngắn từ diff (vd `test(order): them smoke flow tao don`). Kết thúc bằng dòng:
+## Procedure
+1. **Determine the branch**: `git branch --show-current`.
+   - On the **default branch** (`main`/`master`) → **do NOT push directly**. Create a feature branch `feat/<slug>` (inferred from the diff, or ask for a name if unclear) → `git switch -c <branch>`.
+   - Any other branch → keep it.
+2. **Stage**: `git add` the in-scope files; avoid adding junk/secret files (cross-check `.gitignore` — do not add `reports/`, tokens, `.properties` containing secrets).
+3. **Commit message**: use the parameter if provided; empty → auto-generate a short Conventional Commit from the diff (e.g. `test(order): them smoke flow tao don`). End with the line:
    `Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>`
-4. **Push**: `git push -u origin <branch>`. Remote từ chối (branch sau remote) → `git fetch` + báo người dùng, **KHÔNG** force-push.
-5. **Báo**: file đã commit, tên branch, kết quả push (URL branch nếu remote in ra).
+4. **Push**: `git push -u origin <branch>`. Remote rejects (branch behind remote) → `git fetch` + notify the user, do **NOT** force-push.
+5. **Report**: committed files, branch name, push result (branch URL if the remote prints it).
 
-> Chỉ commit/push khi người dùng yêu cầu (qua command `/push-code` hoặc `/merge-request`). Không tự ý.
+> Only commit/push when the user requests it (via command `/push-code` or `/merge-request`). Do not act on your own.

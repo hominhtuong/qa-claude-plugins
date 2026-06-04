@@ -1,25 +1,25 @@
 ---
-description: Quản lý "nợ test-id" — EXPORT danh sách element thiếu id gửi dev, RECORD element mới, hoặc RESOLVE khi dev đã gắn id
-argument-hint: [export (mặc định) | record <screen> <element> | resolve <screen> <element>]
+description: Manage "test-id debt" — EXPORT the list of elements missing an id to send to dev, RECORD a new element, or RESOLVE once dev has added the id
+argument-hint: [export (default) | record <screen> <element> | resolve <screen> <element>]
 allowed-tools: Read, Glob, Grep, Edit, Write, Bash
 ---
 
-# /missing-test-ids — Quản lý "nợ test-id"
+# /missing-test-ids — Manage "test-id debt"
 
-Input: **$ARGUMENTS** (trống → mặc định `export`).
+Input: **$ARGUMENTS** (empty → default `export`).
 
-Wrapper mỏng cho **skill `missing-ids`** (`${CLAUDE_PLUGIN_ROOT}/skills/missing-ids`). Chuẩn locator priority + Missing ID Report: xem rule `coding-rules.md` của plugin domain đang bật (vd `appium`) — locator priority `id > accessibility > uiautomator > xpath`.
+Thin wrapper for **skill `missing-ids`** (`${CLAUDE_PLUGIN_ROOT}/skills/missing-ids`). For the locator priority standard + Missing ID Report: see the `coding-rules.md` of the enabled plugin domain (e.g. `appium`) — locator priority `id > accessibility > uiautomator > xpath`.
 
-## Định tuyến theo `$ARGUMENTS`
+## Routing by `$ARGUMENTS`
 
-| Đối số | Năng lực skill | Việc làm |
+| Argument | Skill capability | Action |
 |---|---|---|
-| `export` *(mặc định)* | EXPORT | `python3 scripts/export_missing_ids.py` → quét `screens/<group>/*.java` + `elements.json`, gom element non-id, in summary + đường dẫn output gửi dev. |
-| `record <screen> <element>` | RECORD | Thêm element thiếu id vào Missing ID Report của Screen đó (locator tạm + mô tả). |
-| `resolve <screen> <element>` | RESOLVE | Sau khi dev gắn id: đổi locator field sang `@MobileFindBy(id=...)` + cập nhật `elements.json` → chạy lại EXPORT để danh sách co lại; verify compile xanh (skill `build-verify`). |
+| `export` *(default)* | EXPORT | `python3 scripts/export_missing_ids.py` → scan `screens/<group>/*.java` + `elements.json`, collect non-id elements, print summary + path to the output sent to dev. |
+| `record <screen> <element>` | RECORD | Add the element missing an id to that Screen's Missing ID Report (temporary locator + description). |
+| `resolve <screen> <element>` | RESOLVE | After dev adds the id: switch the locator field to `@MobileFindBy(id=...)` + update `elements.json` → re-run EXPORT so the list shrinks; verify the compile is green (skill `build-verify`). |
 
-## Đầu ra
-- **export**: số màn quét, tổng element thiếu id (phân theo loại locator: accessibility/uiautomator/xpath/text), đường dẫn file output.
-- **record/resolve**: file Screen/elements.json đã đụng + trạng thái mới.
+## Output
+- **export**: number of screens scanned, total elements missing an id (broken down by locator type: accessibility/uiautomator/xpath/text), path to the output file.
+- **record/resolve**: the Screen/elements.json files touched + the new status.
 
-> Element thiếu `id` neo bằng text/xpath dễ vỡ khi đổi UI/đa ngôn ngữ — đây là tài liệu để QA yêu cầu dev bổ sung `resource-id`/`accessibilityId`.
+> Elements missing an `id` anchored by text/xpath break easily on UI changes / i18n — this is the document for QA to ask dev to add a `resource-id`/`accessibilityId`.

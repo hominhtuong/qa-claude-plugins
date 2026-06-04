@@ -1,15 +1,20 @@
 ---
 name: build-verify
-description: Logic tái dùng làm "cổng xanh" — biên dịch sạch (mvn clean compile test-compile) và (tuỳ chọn) chạy nhanh test của feature vừa đụng. Dùng trước khi kết thúc cook/fix/exploratory và trước khi commit ở push-code/merge-request. Không tăng timeout/workaround để "qua test".
+description: Reusable logic acting as a "green gate" — clean compile/build (auto-detects the project's build system) and (optionally) a quick run of the just-touched feature's tests. Use before finishing cook/fix/exploratory and before committing in push-code/merge-request. Do not raise timeouts / add workarounds just to "pass the test".
 ---
 
 # Skill: build-verify
 
-Năng lực tái dùng: đảm bảo code ở trạng thái biên dịch sạch trước khi đi tiếp. Mỏng nhưng là cổng chặn (không vá để qua).
+Reusable capability: ensure the code is in a clean build state before moving on. Thin but a **blocking gate** (no patching to pass). Domain-agnostic — auto-detects the build system, not hard-wired to Maven.
 
-## Thủ tục
-1. `mvn clean compile test-compile` — phải **xanh**. Đỏ → sửa qua skill `fix-by-layer` tới khi xanh; vẫn đỏ → **DỪNG**, báo lỗi, **không** đi tiếp (không commit/không push).
-2. **Tuỳ chọn** chạy nhanh test feature vừa làm qua script (tự check device): `./scripts/run-android.sh` / `./scripts/run-ios.sh`, hoặc `mvn test -DsuiteXmlFile=testng/<suite>.xml`. Nhớ TestNG XML có `GoToHomeTest` là `<test>` đầu.
-3. **Không** tăng timeout bừa, không `Thread.sleep`, không nới điều kiện chỉ để "qua test" — đó là che lỗi, vi phạm coding-rules.
+## Procedure
+1. **Detect the build system** (from the files present in the repo) then run the compile/build command, which must be **green**:
+   - `pom.xml` (Maven — Appium Java / Playwright Java) → `mvn clean compile test-compile`.
+   - `build.gradle` → `./gradlew compileTestJava` (or `assemble`).
+   - `package.json` (Playwright/WDIO TS-JS) → `npm run build` if present, or `npx tsc --noEmit` / `npm run lint`.
+   - `pubspec.yaml` (Flutter) → `flutter analyze`.
+   Red → fix via skill `fix-by-layer` until green; still red → **STOP**, report the error, do **not** move on (no commit / no push).
+2. **Optionally** do a quick run of the feature you just worked on (auto-check the device): script `./scripts/run-*.sh`, `mvn test -DsuiteXmlFile=testng/<suite>.xml`, `make smoke`, or `npx playwright test <spec>`. (App: the TestNG XML with `GoToHomeTest` is the first `<test>`.)
+3. Do **not** bump timeouts arbitrarily, no `Thread.sleep`/`waitForTimeout`, do not loosen conditions just to "pass the test" — that hides bugs and violates coding-rules.
 
-> Timeout/capabilities lấy tập trung từ `configurations/`, không rải số ma trong code. `MobileFindFieldDecorator` đã lo polling.
+> Timeout/capabilities/credentials are taken centrally from config (`configurations/`, `configs/*.properties`, `.env`), not scattered as magic numbers / secrets in code.

@@ -1,12 +1,13 @@
 # qa-claude-plugins
 
-Marketplace plugin Claude Code **dùng chung** cho các project automation QA của Finan.
-Mục tiêu: **sửa 1 nơi → mọi project update theo**, không còn copy `.claude/` thủ công từng repo, không xung đột với project.
+> **Bộ plugin Claude Code mã nguồn mở cho mọi kỹ sư QA/QC dùng AI.** Tự động hoá kiểm thử web & mobile, sinh test case từ tài liệu, exploratory testing, review code — biến Claude Code thành một "QA engineer" thực thụ ngay trong terminal/IDE của bạn.
 
-- **Repo**: `hominhtuong/qa-claude-plugins` (local: `~/Documents/Shared/QAClaudePlugins`).
-- **Marketplace name**: `qa-claude` (cái anh gõ sau dấu `@`).
-- **Plugins**: `core` (dùng chung mọi project) · `appium` (mobile Appium/Flutter).
-- Sẽ mở rộng: `web` (Playwright), `api` (REST/Postman) theo cùng khuôn.
+Miễn phí & mở cho **bất kỳ ai** — không gắn với công ty hay framework cụ thể nào. Cài một lần, dùng cho mọi project; **sửa 1 nơi → mọi project update theo**, không copy `.claude/` thủ công, không xung đột với cấu hình sẵn có của project.
+
+- **Marketplace**: `qa-claude`.
+- **3 plugin**: `core` (dùng chung) · `auto` (automation đa nền tảng Web+App) · `qa-manual` (sinh test case thủ công).
+- **Triết lý lõi**: command **tự rẽ nền tảng** (web / android / ios) rồi **chỉ đọc skill đúng nền tảng** → không tốn token thừa.
+- **Tích hợp tuỳ chọn**: thông báo kết quả (Lark / Slack / Teams / Telegram) & chia sẻ report (Cloudflare R2 / S3) — dùng tài khoản của chính bạn, bật-tắt tự do.
 
 ---
 
@@ -14,134 +15,212 @@ Mục tiêu: **sửa 1 nơi → mọi project update theo**, không còn copy `.
 
 | | Submodule | npm/library | **Plugin marketplace** ✅ |
 |---|---|---|---|
-| Sửa 1 nơi → all update | `git submodule update` từng repo | postinstall copy file | `/plugin marketplace update qa-claude` (hoặc auto) |
-| Mọi git host | ✓ | ✓ | ✓ (GitHub / git URL / self-host / npm / local) |
-| Không xung đột project | ❌ đổ thẳng vào `.claude` | ❌ | ✅ **namespaced** `/appium:cook` |
+| Sửa 1 nơi → all update | `git submodule update` từng repo | postinstall copy file | `/plugin marketplace update qa-claude` |
+| Không xung đột project | ❌ đổ thẳng vào `.claude` | ❌ | ✅ **namespaced** `/auto:cook` |
+| Project override được | khó | khó | ✅ command/skill **local thắng** plugin trùng tên |
 | Claude load native | ✓ | ❌ không load skill từ `node_modules` | ✅ |
-| Version pin | theo commit | semver | cả hai (`version` trong `plugin.json`) |
-
-> **Codex**: plugin là cơ chế riêng của Claude Code — `.codex/` **không** đọc được. Project nào còn cần Codex thì giữ submodule song song chỉ cho mục đích đó.
 
 ---
 
-## 2. Cấu trúc repo
+## 2. Kiến trúc — router theo nền tảng (điểm cốt lõi)
+
+Dự án automation chạy **nhiều nền tảng**: **Web** (Playwright Java), **App iOS + Android** (Appium Java). Mỗi nền tảng tìm element / viết code / chạy test **khác nhau**. Nếu nhồi hết vào 1 skill → Claude đọc cả phần Android lẫn iOS lẫn Web cho mọi việc → **tốn token, nhiễu**.
+
+**Giải pháp**: skill **tách nhỏ theo nền tảng**, command là **router** — Bước 0 chốt nền tảng, sau đó chỉ đọc **đúng 1 skill**:
+
+```
+/find-elements <màn> [web|android|ios]
+        │
+        ▼  Bước 0 — skill detect-platform (đối số? → auto-detect dự án? → hỏi)
+   ┌────┴─────────────┬──────────────────┐
+  web              android               ios
+   │                  │                   │
+find-elements-web  find-elements-android  find-elements-ios   ← chỉ đọc 1 skill
+(getByRole>testid) (id>accessibility>     (accessibility>
+                    uiautomator>xpath)     -ios predicate>class chain)
+```
+
+Mọi command `auto` theo đúng khuôn này (`/exploratory`, `/cook`, `/run`, `/fix`, …). Bản đồ định tuyến đầy đủ: [`plugins/auto/rules/platform-detect.md`](plugins/auto/rules/platform-detect.md).
+
+| Việc | web | android | ios |
+|---|---|---|---|
+| Điều hướng | `navigate-web` | `navigate-app` | `navigate-app` |
+| Trích locator | `find-elements-web` | `find-elements-android` | `find-elements-ios` |
+| Viết code | `cook-web` | `cook-app` | `cook-app` |
+| Chạy suite | `run-web` | `run-app` | `run-app` |
+| Rule design/coding | `rules/web/*` | `rules/app/*` | `rules/app/*` |
+
+Skill **không phụ thuộc nền tảng** (đọc bất kể platform): `detect-platform`, `exploratory-method`, `plan-method`, `fix-by-layer`, `review-audit` (platform-aware theo từng file), `design-conformance`, `update-sitemap`.
+
+---
+
+## 3. Cấu trúc repo
 
 ```
 qa-claude-plugins/
-├── .claude-plugin/marketplace.json     # catalog liệt kê các plugin
+├── .claude-plugin/marketplace.json          # catalog 3 plugin
 └── plugins/
-    ├── core/
-    │   ├── .claude-plugin/plugin.json
-    │   ├── commands/   status.md · ask.md · missing-test-ids.md
-    │   ├── skills/     commit-push · build-verify · missing-ids
-    │   └── rules/      git-conventions.md
-    └── appium/
-        ├── .claude-plugin/plugin.json
-        ├── commands/   cook · plan · fix · exploratory · run · kill-appium · count-cases · analyze · review-change · review-codebase · push-code · merge-request
-        ├── skills/     capture-elements · declare-screen · mcp-navigate · update-sitemap · run-tests · review-audit · fix-by-layer · design-conformance
-        ├── agents/     source-inspector · figma-reader · lark-reader
-        └── rules/      design-pattern · coding-rules · design-system · design-system-figma · failure-triage · troubleshooting · lark-mcp-guide · review-checklist · exploratory-bug-report-template · report-template.html
+    ├── core/                                 # domain-agnostic, dùng chung
+    │   ├── commands/  help · status · ask · missing-test-ids
+    │   ├── skills/    help-info · commit-push · build-verify · missing-ids
+    │   └── rules/     git-conventions
+    │
+    ├── auto/                                 # automation Web + App (router theo nền tảng)
+    │   ├── commands/  find-elements · exploratory · plan-tests · cook · run · fix ·
+    │   │              review-change · review-codebase · push-code · merge-request ·
+    │   │              analyze · count-cases · kill-appium
+    │   ├── skills/    detect-platform │ find-elements-{web,android,ios} │
+    │   │              navigate-{web,app} │ cook-{web,app} │ run-{web,app} │
+    │   │              exploratory-method · plan-method · fix-by-layer · review-audit ·
+    │   │              design-conformance · declare-screen · update-sitemap · setup · doctor
+    │   ├── scripts/   setup · doctor · lark_notify · notify_webhook · push_report · push_s3 · _env · _upload  (python3, cross-platform)
+    │   ├── templates/ .env.example  (config Lark/R2 — copy sang ./.env trong project)
+    │   ├── rules/     platform-detect · failure-triage · exploratory-bug-report-template ·
+    │   │              lark-mcp-guide │ web/{design-pattern,coding-rules,design-system,review-checklist} │
+    │   │              app/{design-pattern,coding-rules,design-system,design-system-figma,review-checklist,troubleshooting}
+    │   └── agents/    source-inspector · figma-reader · lark-reader
+    │
+    └── qa-manual/                            # QA thủ công: test case → Sheet/xlsx
+        ├── commands/  cook · plan-tests · analyze · log-bug · count-cases
+        ├── skills/    gen-testcases · plan-testcases · tc-template · log-bug
+        └── rules/     test-quality · severity-priority · output-format
 ```
 
-**Nguyên tắc phân tầng**: file mà một command/skill cần **đọc** phải nằm **cùng plugin** (vì `${CLAUDE_PLUGIN_ROOT}` là per-plugin, không trỏ chéo plugin được). Việc gọi **skill khác plugin** thì gọi **theo tên** (`commit-push`) — Claude resolve theo plugin đang bật, OK.
+**Nguyên tắc phân tầng**: file mà 1 command/skill **đọc** phải nằm **cùng plugin** (`${CLAUDE_PLUGIN_ROOT}` là per-plugin). Gọi **skill plugin khác** (vd `commit-push`/`build-verify` của `core`) thì **gọi theo tên** — Claude resolve theo plugin đang bật.
 
 ---
 
-## 3. Cách dùng cho mỗi project
+## 4. Command catalog & luồng làm việc
 
-### Cài (1 lần / máy)
+### `auto` — automation (luồng chuẩn)
+1. **`/auto:exploratory <feature> [platform]`** — khám phá như QA senior, **săn bug**, chụp bằng chứng → `reports/exploratory/<feature>/`, xuất **bug report gửi dev**. 🚦 **GATE**: có `[APP-BUG]` → báo dev, **dừng** (không viết test cho app sai).
+2. **`/auto:plan-tests <feature>`** — thiết kế plan test (chỉ khi exploratory sạch).
+3. **`/auto:find-elements <màn>`** — trích locator bền vững (router 3 nền tảng).
+4. **`/auto:cook <plan|yêu cầu>`** — viết Page Object + test (web→`cook-web`, app→`cook-app`).
+5. **`/auto:run [platform]`** — compile + chạy + **triage fail** (`[APP-BUG]` vs `[FRAMEWORK]`/`[ENV]`/`[DATA]`).
+6. **`/auto:fix <bug>`** — sửa **đúng layer**, không sửa test để né `[APP-BUG]`.
+7. **`/auto:review-change`** · **`/auto:review-codebase`** → **`/auto:push-code`** → **`/auto:merge-request`**.
+
+### `qa-manual` — test case thủ công
+`/qa-manual:analyze <spec>` → `/qa-manual:plan-tests <feature>` → `/qa-manual:cook <plan>` (sinh test case ra **Sheet/xlsx**, tiếng Việt có dấu, chuẩn `test-quality`) → `/qa-manual:log-bug <mô tả>` (Lark Bitable).
+
+### `core` — dùng chung
+`/help` (giới thiệu + hướng dẫn — skill `help-info`) · `/status` · `/ask` · `/missing-test-ids` (quản lý nợ test-id gửi dev).
+
+> **Lệnh trùng tên** (`cook`, `plan-tests` có ở cả `auto` và `qa-manual`) → **luôn gõ namespaced**: `/auto:cook` (viết code) vs `/qa-manual:cook` (sinh test case).
+
+---
+
+## 5. Cài & bật cho mỗi project
+
 ```bash
-# GitHub
-/plugin marketplace add hominhtuong/qa-claude-plugins
-# hoặc git URL bất kỳ (GitLab/self-host)
-/plugin marketplace add https://gitlab.com/finan/qa-claude-plugins.git
-
+# Cài marketplace (1 lần/máy)
+/plugin marketplace add hominhtuong/qa-claude-plugins      # hoặc git URL GitLab/self-host
 /plugin install core@qa-claude
-/plugin install appium@qa-claude     # project mobile
+/plugin install auto@qa-claude            # project automation (web/app)
+/plugin install qa-manual@qa-claude       # project QA tài liệu
 ```
 
-### Hoặc khai báo trong project (commit vào repo → ai clone cũng tự được hỏi cài)
-`.claude/settings.json`:
+Hoặc commit vào project (ai clone cũng được hỏi cài) — `.claude/settings.json`:
 ```json
 {
   "extraKnownMarketplaces": {
     "qa-claude": { "source": { "source": "github", "repo": "hominhtuong/qa-claude-plugins" } }
   },
-  "enabledPlugins": {
-    "core@qa-claude": true,
-    "appium@qa-claude": true
-  }
+  "enabledPlugins": { "core@qa-claude": true, "auto@qa-claude": true }
 }
 ```
 
-### Gọi command (namespaced — không đụng command local)
-```
-/appium:cook <plan|yêu cầu>
-/appium:exploratory <feature>
-/core:push-code
-```
-> Gõ **trần** `/cook` → command **local** của project (nếu có) sẽ thắng. Muốn dùng bản plugin thì gõ namespaced `/appium:cook`, hoặc **xóa command trùng** khỏi project để hết drift.
+**Override trong project**: gõ trần `/cook` → command **local** của project (nếu có) **thắng** plugin. Muốn bản plugin → gõ namespaced `/auto:cook`, hoặc xoá command local trùng để hết drift. Project có thể đặt skill cùng tên trong `.claude/skills/` để **đè** skill plugin.
 
 ---
 
-## 4. Update một nơi → mọi project
+## 5b. Lark notify & Cloudflare R2 push — **đều TÙY CHỌN**
 
-1. Sửa file trong `plugins/...`, commit & push repo này.
-2. Mỗi máy: `/plugin marketplace update qa-claude` rồi `/reload-plugins` (hoặc mở session mới).
-3. **Versioning**: bump `version` trong `plugin.json` mỗi lần release để project nhảy có kiểm soát. (Bỏ `version` = auto theo mỗi commit.)
+> **Mặc định: không cần cấu hình gì.** Report luôn được sinh **trong local project** (`reports/…` cho app · `results/reports/…` cho web). Lark và R2 là **2 tính năng độc lập, bật-tắt riêng** — chỉ để **thông báo** (Lark) và **chia sẻ report qua URL** (R2). Không bật → `/auto:run` vẫn chạy bình thường, bỏ qua êm.
 
----
+**Mỗi user dùng tài khoản của CHÍNH MÌNH** — toàn bộ webhook/secret/key do user tự điền vào `./.env` của project (git-ignored). Plugin **không chứa** và **không dùng chung** account của ai.
 
-## 5. Tham chiếu rule trong plugin
+### Cài 1 lần / project (tạo `.env` + check toolchain)
 
-Rule sống cùng plugin, command/skill đọc qua biến `${CLAUDE_PLUGIN_ROOT}` (trỏ tới path cache thật ở mọi máy):
-```
-- @${CLAUDE_PLUGIN_ROOT}/rules/design-pattern.md
-- @${CLAUDE_PLUGIN_ROOT}/rules/coding-rules.md
-```
-Project **không cần** sửa CLAUDE.md để nạp rule — command tự đọc.
+Chạy skill `setup` (hoặc bảo Claude *"chạy skill setup của auto"*):
 
----
-
-## 6. Trạng thái & việc còn lại (pilot)
-
-Đây là **bản scaffold lần 1**, gom 1:1 nội dung `.claude/` của **SBHAppium** làm bản mẫu chạy được.
-
-- [x] Cấu trúc marketplace + 2 plugin + manifests.
-- [x] Rewrite `.claude/{rules,skills,agents}/` → `${CLAUDE_PLUGIN_ROOT}/...` trong `appium`.
-- [x] Tách `core` thật sự decoupled (3 skill + 3 command + git-conventions).
-- [ ] **Verify khi pilot**: `@${CLAUDE_PLUGIN_ROOT}/rules/X.md` (auto-import có expand biến không) — nếu không, đổi thành câu lệnh "Read `${CLAUDE_PLUGIN_ROOT}/rules/X.md`".
-- [ ] Rule `design-system-figma.md` còn trỏ `../../sbh-app-design-system/` (đặc thù SBH) — khi dùng cho project khác cần tổng quát hóa hoặc bỏ.
-- [ ] **Open design**: `push-code`/`merge-request` (orchestrator) đang ở `appium` vì gọi `review-audit` (domain). Có thể nâng thành "core orchestrator gọi review-audit theo tên" khi thêm `web`/`api`.
-- [ ] Tạo plugin `web` (từ F2WebAutomation) + `api` (từ SBH_API).
-
-### Pilot khuyến nghị
-Cài vào **ShinhanAppium** (đang trống skills/rules, rủi ro thấp nhất) → chạy `/appium:cook`, `/appium:run` xác nhận hoạt động trước khi rollout phần còn lại.
-
----
-
-## 7. Tiếp tục bằng AI (dành cho phiên làm việc tại repo này)
-
-Mở Claude Code **ngay tại thư mục repo này** (`~/Documents/Shared/QAClaudePlugins`) rồi giao việc theo các mạch dưới. Mỗi việc nêu rõ ràng buộc để AI không phá kiến trúc.
-
-### Luật bất biến khi gen thêm (nói AI tuân thủ)
-1. **`${CLAUDE_PLUGIN_ROOT}` là per-plugin** — file mà một command/skill *đọc* phải nằm **cùng plugin**; gọi skill khác plugin thì **gọi theo tên** (vd `commit-push`), không trỏ đường dẫn chéo plugin.
-2. **Không** dùng `.claude/rules|skills|agents/` trong file plugin — luôn `${CLAUDE_PLUGIN_ROOT}/...` (hoặc link tương đối trong cùng plugin).
-3. Mỗi plugin có `.claude-plugin/plugin.json` (`name`, `description`, `version`). Mỗi lần release → **bump `version`**.
-4. Command frontmatter giữ nguyên format hiện có (`description`, `argument-hint`, `allowed-tools`). Skill là thư mục `<name>/SKILL.md` với frontmatter `name` + `description`.
-5. Sau khi sửa: chạy `python3 -m json.tool` cho mọi JSON; grep `\.claude/(rules|skills|agents)/` phải rỗng trong `plugins/`.
-
-### Backlog gợi ý (prompt mẫu cho AI)
-- **Tạo plugin `web`**: "Tạo plugin `web` từ `~/Documents/Finan/F2WebAutomation/.claude` (Playwright Java + TestNG). Cùng khuôn `appium`: copy commands/skills/rules vào `plugins/web/`, rewrite path sang `${CLAUDE_PLUGIN_ROOT}`, thêm `plugin.json`, thêm entry vào `marketplace.json`. Các skill trùng tên với `core` (commit-push/build-verify/missing-ids) thì **bỏ**, gọi `core` theo tên."
-- **Tạo plugin `api`**: tương tự từ `~/Documents/Finan/SBH_API/.claude`.
-- **Nâng orchestrator lên core**: "Chuyển `push-code`/`merge-request` từ `appium` sang `core`, sửa để gọi `review-audit`/`fix-by-layer` **theo tên** (resolve theo plugin domain đang bật) thay vì trỏ file."
-- **Tổng quát hóa rule SBH-specific**: bỏ/điều kiện hóa tham chiếu `../../sbh-app-design-system/` trong `appium/rules/design-system-figma.md`.
-- **Verify auto-import**: kiểm dòng `@${CLAUDE_PLUGIN_ROOT}/rules/X.md` có expand không; nếu không → đổi sang câu lệnh "Read `${CLAUDE_PLUGIN_ROOT}/rules/X.md`" ở đầu mỗi command.
-
-### Phát hành thay đổi
 ```bash
-# sửa file trong plugins/... → bump version trong plugin.json
-git add -A && git commit -m "feat(web): add web plugin"
-git push
-# mỗi máy dùng:  /plugin marketplace update qa-claude  →  /reload-plugins
+# macOS/Linux
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/setup.py
+# Windows
+python  %CLAUDE_PLUGIN_ROOT%\scripts\setup.py
 ```
+
+Script tự: tạo `./.env` từ template · vá `.gitignore` · chạy **doctor** (in lệnh cài thiếu theo OS, tự cài `wrangler` nếu có npm). Sau đó mở `./.env` bật tính năng cần dùng:
+
+### Tùy chọn A — Lark notify (card kết quả vào group Lark)
+
+Bật `ENABLE_LARK_NOTIFY=true` rồi điền **cụm `LARK_*`** (lấy từ Custom Bot của group anh):
+
+```ini
+ENABLE_LARK_NOTIFY=true
+LARK_WEBHOOK_URL=https://open.larksuite.com/open-apis/bot/v2/hook/<của-bạn>
+LARK_WEBHOOK_SECRET=<sign secret của bot, để trống nếu bot không bật sign>
+LARK_PLATFORM=Tên hiển thị trên card     # vd "MyApp - Android"
+LARK_USER=Tên người/đội trigger
+```
+
+Yêu cầu thêm: **không có** (script Lark dùng python stdlib thuần). Lấy webhook: group Lark → Settings → Bots → **Custom Bot** → copy webhook (+ secret nếu bật "Signature verification").
+
+### Tùy chọn B — Cloudflare R2 push (upload report lên cloud, share bằng URL)
+
+Bật `ENABLE_CF_PUSH=true` rồi điền **cụm `CF_*`** (R2 của tài khoản Cloudflare của anh):
+
+```ini
+ENABLE_CF_PUSH=true
+CF_ACCOUNT_ID=<account id Cloudflare>
+CF_API_TOKEN=<API token quyền R2 Edit>
+CF_R2_BUCKET=<tên bucket>
+CF_R2_DOMAIN=https://<custom domain của bucket>   # optional: để build URL public
+CF_R2_PREFIX=auto                                 # optional: thư mục con trong bucket
+```
+
+Yêu cầu thêm: **`wrangler` CLI** (`npm install -g wrangler` — skill `setup`/`doctor` tự cài nếu có npm). Tạo token: Cloudflare → My Profile → API Tokens → **R2 Token** (Edit).
+
+> Hai cụm hoàn toàn độc lập: bật A không cần B và ngược lại.
+
+### Ai lo tầng nào
+
+| Tầng | Ai lo | Ghi chú |
+| --- | --- | --- |
+| Toolchain (python/node/java/mvn/wrangler) | skill `doctor` | detect + in lệnh cài theo OS; tự cài được mỗi `wrangler` |
+| Util code (Lark/R2) | `scripts/*.py` trong plugin | stdlib thuần (Lark) + `wrangler` (R2); không cần pip |
+| Secret/config | `./.env` trong **project** | account của **chính user**, git-ignored, không bao giờ vào repo plugin |
+
+### Phương án thay thế (mỗi nhóm chọn tối đa 1 kênh)
+
+| Nhu cầu | Mặc định (zero-config) | Kênh A | Kênh B (thay thế) |
+| --- | --- | --- | --- |
+| **Xem report** | ✅ HTML ngay trong local project | — | — |
+| **Thông báo kết quả** | tóm tắt ngay trong phiên Claude | **Lark** (`ENABLE_LARK_NOTIFY` + `LARK_*`) | **Generic webhook** Slack/Teams/Telegram/Discord (`ENABLE_NOTIFY_WEBHOOK` + `NOTIFY_*`) |
+| **Chia sẻ report qua URL** | mở file local / gửi tay | **Cloudflare R2** (`ENABLE_CF_PUSH` + `CF_*`, cần `wrangler`) | **S3-compatible** AWS/CMC/MinIO (`ENABLE_S3_PUSH` + `S3_*`/`AWS_*`, cần `aws` CLI) |
+
+Generic webhook: set `NOTIFY_PROVIDER=slack\|discord\|teams\|generic` + `NOTIFY_WEBHOOK_URL`, hoặc `telegram` + `NOTIFY_TELEGRAM_TOKEN`/`NOTIFY_TELEGRAM_CHAT_ID`. S3: để trống `S3_ENDPOINT` cho AWS thật, điền endpoint cho CMC/MinIO. Tất cả vẫn là cụm key trong `./.env` của user — chọn kênh nào điền cụm đó, kênh không dùng để `ENABLE_*=false`.
+
+---
+
+## 6. Update một nơi → mọi project
+
+1. Sửa file trong `plugins/...`, **bump `version`** trong `plugin.json` liên quan, commit & push.
+2. Mỗi máy: `/plugin marketplace update qa-claude` → `/reload-plugins` (hoặc mở session mới).
+
+---
+
+## 7. Luật bất biến khi mở rộng (nói AI tuân thủ)
+
+1. **`${CLAUDE_PLUGIN_ROOT}` là per-plugin** — file một command/skill *đọc* phải **cùng plugin**; gọi skill plugin khác thì **gọi theo tên** (vd `commit-push`), không trỏ path chéo plugin.
+2. **Không** dùng `.claude/rules|skills|agents/` trong file plugin — luôn `${CLAUDE_PLUGIN_ROOT}/...` hoặc link tương đối trong cùng plugin.
+3. **Command `auto` luôn có Bước 0 `detect-platform`** rồi chỉ đọc skill/rule đúng nền tảng (web `rules/web/*` · app `rules/app/*`). Thêm nền tảng mới = thêm skill `*-<platform>` + 1 dòng trong router, KHÔNG nhồi vào skill chung.
+4. Command frontmatter giữ format (`description`, `argument-hint`, `allowed-tools`). Skill = thư mục `<name>/SKILL.md`, frontmatter `name` (== tên thư mục) + `description`.
+5. Sau khi sửa: `python3 -m json.tool` mọi JSON; `grep -rn '\.claude/\(rules\|skills\|agents\)/' plugins/` phải rỗng; tên skill tham chiếu phải tồn tại.
+
+### Backlog gợi ý
+- Tách riêng plugin `api` (REST/Postman) nếu cần — cùng khuôn router.
+- Package Java ví dụ dùng placeholder `com.example.*`; project thật nên đặt base package của mình (cấu hình trong CLAUDE.md) — rule chỉ minh hoạ cấu trúc `screens/tests/utils/base`.
+- Thêm nền tảng Flutter integration_test (Dart) như nhánh thứ 4 của router nếu chuyển từ Appium sang `appium_flutter_server`.

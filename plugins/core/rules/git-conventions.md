@@ -1,25 +1,25 @@
 # Git Conventions (shared)
 
-Quy ước git dùng chung mọi project automation. Skill `commit-push` enforce phần lớn các luật này.
+Git conventions shared across every automation project. Skill `commit-push` enforces most of these rules.
 
 ## Branch
-- **KHÔNG** commit/push thẳng `main`/`master`. Luôn tạo branch feature `feat/<slug>` (hoặc `fix/<slug>`, `chore/<slug>`).
-- Một PR/MR = một feature. Branch suy slug từ nội dung diff.
+- Do **NOT** commit/push directly to `main`/`master`. Always create a feature branch `feat/<slug>` (or `fix/<slug>`, `chore/<slug>`).
+- One PR/MR = one feature. Infer the branch slug from the diff content.
 
 ## Commit message (Conventional Commits)
-- Format: `<type>(<scope>): <mô tả ngắn>` — type ∈ `feat|fix|test|chore|refactor|docs|ci`.
-- Ví dụ: `test(order): them smoke flow tao don`, `fix(auth): sua locator nut dang nhap`.
-- Kết thúc commit message bằng trailer:
+- Format: `<type>(<scope>): <short description>` — type ∈ `feat|fix|test|chore|refactor|docs|ci`.
+- Examples: `test(order): them smoke flow tao don`, `fix(auth): sua locator nut dang nhap`.
+- End the commit message with the trailer:
   ```
   Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>
   ```
 
 ## Push
-- `git push -u origin <branch>` — **không** `--force`.
-- Chỉ commit/push **khi người dùng yêu cầu**.
-- Không add file rác/secret: bỏ `reports/`, token, `.properties` chứa secret (đối chiếu `.gitignore`).
+- `git push -u origin <branch>` — **no** `--force`.
+- Only commit/push **when the user requests it**.
+- Do not add junk/secret files: skip `reports/`, tokens, `.properties` containing secrets (cross-check `.gitignore`).
 
-## Cổng trước khi commit
-1. `review-audit` sạch Critical/Blocker.
-2. `build-verify` xanh (`mvn clean compile test-compile`).
-3. Mới tới `commit-push`.
+## Gate before committing
+1. `review-audit` clean of Critical/Blocker.
+2. `build-verify` green (`mvn clean compile test-compile`).
+3. Only then proceed to `commit-push`.

@@ -1,10 +1,10 @@
 ---
-description: Trả lời câu hỏi về codebase, kiến trúc, cấu hình hoặc cách tiếp cận test (chỉ trả lời, không sửa code)
-argument-hint: <câu hỏi về dự án>
+description: Answer questions about the codebase, architecture, configuration, or testing approach (answer only, do not modify code)
+argument-hint: <question about the project>
 allowed-tools: Read, Glob, Grep, Bash
 ---
 
-# /ask — Hỏi đáp về dự án
+# /ask — Project Q&A
 
 You are a QA Automation Expert for this project. Answer questions about the codebase, architecture, or testing approach.
 
@@ -18,7 +18,7 @@ Question: $ARGUMENTS
 - Identify which parts of the codebase are relevant
 
 ### Step 2: Research
-- Read CLAUDE.md and relevant `.claude/rules/` files
+- Read CLAUDE.md and relevant plugin rules (`${CLAUDE_PLUGIN_ROOT}/rules/` of the enabled plugin domain, e.g. auto: `rules/web/*` | `rules/app/*`)
 - Read source files related to the question
 - Check git history if the question is about recent changes
 
@@ -31,5 +31,5 @@ Question: $ARGUMENTS
 ## Rules
 - DO NOT modify any code — answer only
 - If you don't know, say so rather than guessing
-- Reference project rules from `.claude/rules/` + CLAUDE.md when relevant
-- Suggest using `/plan`, `/cook`, or `/fix` if the user's question implies they want to make changes
+- Reference project rules (plugin `rules/` + CLAUDE.md) when relevant
+- Suggest using `/plan-tests`, `/cook`, or `/fix` if the user's question implies they want to make changes

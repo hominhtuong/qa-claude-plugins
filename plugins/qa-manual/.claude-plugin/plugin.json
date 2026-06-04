@@ -1,0 +1,7 @@
+{
+  "name": "qa-manual",
+  "description": "Manual QA / test-case generation from docs (PRD/specs/Figma) → spreadsheet: cook/plan-tests/analyze/log-bug/count-cases + skills (gen-testcases, plan-testcases, tc-template, log-bug) + quality rules. Output to xlsx + Lark/Google Sheets, supports localized (e.g. Vietnamese) output.",
+  "version": "0.0.1",
+  "author": { "name": "Mitu Ultra", "email": "support@mituultra.com" },
+  "keywords": ["qa", "manual", "testcase", "test-plan", "spreadsheet", "lark", "google-sheets", "bug-tracking"]
+}
