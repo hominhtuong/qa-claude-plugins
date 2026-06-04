@@ -99,15 +99,15 @@ URL: `https://<your-org>.larksuite.com/wiki/<wiki-token>`
 
 ```
 // 1. Get obj_token
-wiki_v2_space_getNode(token: "BrOZwhai1ifbcokUavil2VQ0gcd", useUAT: true)
-// → obj_token: "EV4tdqrWLo8tWyxg4s1luUCDgYe", obj_type: "docx"
+wiki_v2_space_getNode(token: "<wiki_token>", useUAT: true)
+// → obj_token: "<obj_token>", obj_type: "docx"
 
 // 2. Read content (run in parallel)
-docx_v1_documentBlock_list(document_id: "EV4tdqrWLo8tWyxg4s1luUCDgYe", useUAT: true)
-drive_v1_fileComment_list(file_token: "EV4tdqrWLo8tWyxg4s1luUCDgYe", file_type: "docx")  // tenant token
+docx_v1_documentBlock_list(document_id: "<obj_token>", useUAT: true)
+drive_v1_fileComment_list(file_token: "<obj_token>", file_type: "docx")  // tenant token
 
 // 3. Download inline images (from block_type=27, take image.token)
-drive_v1_media_batchGetTmpDownloadUrl(file_tokens: ["T58ob...", "K9Gob..."], useUAT: true)
+drive_v1_media_batchGetTmpDownloadUrl(file_tokens: ["<img_token_1>", "<img_token_2>"], useUAT: true)
 // → tmp_download_urls[]: use curl to download, the Read tool to view
 ```
 

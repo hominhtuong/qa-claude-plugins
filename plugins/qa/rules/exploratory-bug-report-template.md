@@ -1,12 +1,12 @@
 # Exploratory Bug Report — Template (standard format to send to dev)
 
-> **Mandatory** output format for `/exploratory` (and for the exploratory-gate of `/plan-tests`). The original approved sample: [`reports/exploratory/dev-bug-report-03Jun2026.md`](../../reports/exploratory/dev-bug-report-03Jun2026.md).
+> **Mandatory** output format for `/exploratory` (and for the exploratory-gate of `/plan-tests`). Output lives in the PROJECT under `reports/exploratory/` (created at run time).
 >
 > **Output language**: the report body is written in **Vietnamese (with diacritics)** — it is a deliverable sent to the Vietnamese dev team. The instructions below are in English; the template field labels are kept in Vietnamese as they are part of the deliverable.
 >
 > - **Output file**: `reports/exploratory/<group>/dev-bug-report-<ddMMMyyyy>.md` (e.g. `dev-bug-report-03Jun2026.md`). If running multiple groups on the same day → one file/day grouping all groups, or one file per group.
 > - **Screenshot evidence**: saved in `reports/exploratory/<group>/screenshots/`, **named by BUG-ID** (`02-APP01-published-tab-sqlite-crash.png`). Each `[APP-BUG]` MUST have at least one screenshot.
-> - Each bug is also **appended to the defect register** [`reports/exploratory/bug-summary.md`](../../reports/exploratory/bug-summary.md) (assign an APP-ID, update the count table + severity distribution).
+> - Each bug is also **appended to the defect register** `reports/exploratory/bug-summary.md` (assign an APP-ID, update the count table + severity distribution).
 > - Assign labels per [failure-triage.md](failure-triage.md). **Only `[APP-BUG]` blocks test writing** (see `/plan-tests`).
 
 ---
