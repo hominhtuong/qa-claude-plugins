@@ -4,7 +4,7 @@ argument-hint: <question about the project>
 allowed-tools: Read, Glob, Grep, Bash
 ---
 
-# /ask — Project Q&A
+# /qa:ask — Project Q&A
 
 You are a QA Automation Expert for this project. Answer questions about the codebase, architecture, or testing approach.
 
@@ -32,4 +32,4 @@ Question: $ARGUMENTS
 - DO NOT modify any code — answer only
 - If you don't know, say so rather than guessing
 - Reference project rules (plugin `rules/` + CLAUDE.md) when relevant
-- Suggest using `/plan-tests`, `/cook`, or `/fix` if the user's question implies they want to make changes
+- Suggest using `/qa:plan-tests`, `/qa:cook`, or `/qa:fix` if the user's question implies they want to make changes

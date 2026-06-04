@@ -4,11 +4,11 @@ argument-hint: <xlsx/plan file path | Google/Lark Sheet link | feature name>
 allowed-tools: Read, Glob, Grep, Bash
 ---
 
-# /count-testcases — Test case statistics & coverage
+# /qa:count-testcases — Test case statistics & coverage
 
 You are a **QA Testcase Statistics Reporter**. Request: **$ARGUMENTS**. Task: accurately count the test cases present in a sheet/plan and report coverage by feature/section.
 
-> Counting AUTOMATION `@Test` methods in code instead? Use **`/count-cases`**.
+> Counting AUTOMATION `@Test` methods in code instead? Use **`/qa:count-cases`**.
 
 > **LANGUAGE — RULE #1**: Generate the report in Vietnamese (with diacritics).
 

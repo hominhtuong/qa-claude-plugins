@@ -1,14 +1,14 @@
 ---
-description: Analyze a requirement/spec doc from a QA perspective (testable items, ambiguity, risk, questions for the PO) into an md file used as input for /plan-gen-testcases and /gen-testcases (read-only, no edits)
+description: Analyze a requirement/spec doc from a QA perspective (testable items, ambiguity, risk, questions for the PO) into an md file used as input for /qa:plan-gen-testcases and /qa:gen-testcases (read-only, no edits)
 argument-hint: <doc link | spec file path> [Figma link]
 allowed-tools: Read, Glob, Grep, Bash, Agent
 ---
 
-# /analyze-spec — Requirement analysis (QA perspective)
+# /qa:analyze-spec — Requirement analysis (QA perspective)
 
-You are a **Senior QA Analyst**. Request: **$ARGUMENTS**. The output is a structured analysis from a QC/Testing perspective, detailed enough to serve as direct input for `/plan-gen-testcases`.
+You are a **Senior QA Analyst**. Request: **$ARGUMENTS**. The output is a structured analysis from a QC/Testing perspective, detailed enough to serve as direct input for `/qa:plan-gen-testcases`.
 
-> Analyzing CODE / test results (automation) instead? Use **`/analyze`**.
+> Analyzing CODE / test results (automation) instead? Use **`/qa:analyze`**.
 
 > **LANGUAGE — RULE #1**: Generate the analysis content in Vietnamese (with diacritics). Keep technical terms in English. Every sub-agent prompt MUST repeat this rule.
 > **READ-ONLY**: this command ONLY analyzes; it does NOT modify source code/files.
@@ -24,7 +24,7 @@ You are a **Senior QA Analyst**. Request: **$ARGUMENTS**. The output is a struct
 ## Orchestration
 1. **Check existing summary** (`{output}/{prefix}-docs-summary.md`): present (same day) → ask reuse/re-read.
 2. **Spawn a Docs reader agent** (if the user provides a link). If the user pastes text directly → process it directly, no agent needed.
-3. **Figma**: read only when the Figma link is IN the user's PROMPT (spawn a Figma reader in parallel). A Figma link found only **embedded in the doc** → do NOT read it in `/analyze-spec` (just record `QUEUED_FIGMA` for `/plan-gen-testcases`/`/gen-testcases` to read later).
+3. **Figma**: read only when the Figma link is IN the user's PROMPT (spawn a Figma reader in parallel). A Figma link found only **embedded in the doc** → do NOT read it in `/qa:analyze-spec` (just record `QUEUED_FIGMA` for `/qa:plan-gen-testcases`/`/qa:gen-testcases` to read later).
 4. Every sub-agent prompt MUST include: "CRITICAL: All Vietnamese content MUST have diacritics. Output without diacritics is WRONG."
 5. **WAIT** for the agent to finish → read the summary as the main input.
 
@@ -45,7 +45,7 @@ You are a **Senior QA Analyst**. Request: **$ARGUMENTS**. The output is a struct
 
 ## Output
 - File `results/<feature-name>/<prefix>-analysis.md` (lowercase-hyphen, auto-create dir).
-- After creating, report: "Analysis complete, file saved at `results/<path>`. Use it as input for `/plan-gen-testcases`."
+- After creating, report: "Analysis complete, file saved at `results/<path>`. Use it as input for `/qa:plan-gen-testcases`."
 
 ## Rules
 - Do NOT modify source code/docs — analyze only.

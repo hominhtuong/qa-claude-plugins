@@ -4,12 +4,12 @@ argument-hint: <bug description / test failure / path to plan to fix> [web|andro
 allowed-tools: Read, Glob, Grep, Edit, Write, Bash, Agent
 ---
 
-# /fix — Fix a bug or fix a plan (platform router)
+# /qa:fix — Fix a bug or fix a plan (platform router)
 
 Input: **$ARGUMENTS**
 
 ## Classify
-1. **Fix a plan**: input points to a file in `plans/` or says "fix plan" → update that plan file (keep the standard `/plan-tests` format). Do NOT use skill fix-by-layer.
+1. **Fix a plan**: input points to a file in `plans/` or says "fix plan" → update that plan file (keep the standard `/qa:plan-tests` format). Do NOT use skill fix-by-layer.
 2. **Fix a bug** (default): compile/build fail / test fail / flaky / rule violation → continue below.
 
 ## Step 0 — Lock platform (routing)

@@ -5,7 +5,7 @@ description: Engine that writes mobile test code (Appium Java + TestNG + POM), u
 
 # Skill: cook-app
 
-Reusable capability: from `plans/<feature>/plan.md` → standards-compliant POM Appium Java code that compiles green. The `/cook` command routes to this skill when the platform is **android/ios** (web → `cook-web` skill). Source standards (read BEFORE writing): [design-pattern.md](../../rules/app/design-pattern.md), [coding-rules.md](../../rules/app/coding-rules.md), [design-system.md](../../rules/app/design-system.md).
+Reusable capability: from `plans/<feature>/plan.md` → standards-compliant POM Appium Java code that compiles green. The `/qa:cook` command routes to this skill when the platform is **android/ios** (web → `cook-web` skill). Source standards (read BEFORE writing): [design-pattern.md](../../rules/app/design-pattern.md), [coding-rules.md](../../rules/app/coding-rules.md), [design-system.md](../../rules/app/design-system.md).
 
 ## Procedure
 1. **GATE app-correct**: only cook features/sub-features that passed exploratory cleanly (no `[APP-BUG]`). Parts currently broken → do NOT write tests; leave the bug report for the dev.

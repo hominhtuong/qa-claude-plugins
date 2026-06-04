@@ -4,7 +4,7 @@ argument-hint: [optional commit message — empty = auto-generate from the diff]
 allowed-tools: Read, Glob, Grep, Edit, Write, Bash
 ---
 
-# /push-code — Review → fix → build → push
+# /qa:push-code — Review → fix → build → push
 
 Input (optional commit message): **$ARGUMENTS**
 

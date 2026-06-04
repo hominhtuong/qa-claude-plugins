@@ -9,7 +9,7 @@ Reusable capability: from a blank state → standing on the correct feature scre
 
 ## ⚠️ Two independent Appium servers — don't confuse them
 - **MCP (this skill uses)**: server on a **fixed port 4723** per `.mcp.json` (`APPIUM_PORT=4723`). Start it with `./scripts/start-appium.sh` (kills the old port + starts + waits for ready). The MCP `appium_*` tools connect here.
-- **Test runtime (`/run`, NOT this skill)**: `AppiumServer.java` calls `usingAnyFreePort()` → any free port (or `APPIUM_SERVER_URL` if set). Does not touch 4723. → Don't run start-appium.sh for `/run`.
+- **Test runtime (`/qa:run`, NOT this skill)**: `AppiumServer.java` calls `usingAnyFreePort()` → any free port (or `APPIUM_SERVER_URL` if set). Does not touch 4723. → Don't run start-appium.sh for `/qa:run`.
 
 ## Procedure
 1. **Device preflight**: `adb devices` (Android) / `xcrun simctl list devices` (iOS). Emulator needed but not running → `./scripts/start-emulator.sh` (poll until ready).

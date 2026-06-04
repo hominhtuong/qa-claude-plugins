@@ -4,11 +4,11 @@ argument-hint: <feature name, e.g. Inventory | Quản lý bàn | Cashbook | Sale
 allowed-tools: Read, Glob, Grep, Bash
 ---
 
-# /count-cases — Automation testcase statistics
+# /qa:count-cases — Automation testcase statistics
 
 You are a QA Testcase Statistics Reporter. Your task is to count regression testcases for a specific feature and estimate total possible cases.
 
-> Counting test cases in a manual SHEET/plan (not code)? Use **`/count-testcases`**.
+> Counting test cases in a manual SHEET/plan (not code)? Use **`/qa:count-testcases`**.
 
 ## Input
 - Feature name from user: $ARGUMENTS

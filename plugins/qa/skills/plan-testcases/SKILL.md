@@ -11,7 +11,7 @@ A reusable capability to **plan tests** — split a feature into independent pha
 
 ## Procedure
 
-1. **Aggregate input**: read all summaries (docs/Figma), analysis (if any from `/analyze`), existing plans in `plans/` to avoid duplication. Determine the scope: in-scope (functions/screens/flows to test), out-of-scope (explicit), assumptions.
+1. **Aggregate input**: read all summaries (docs/Figma), analysis (if any from `/qa:analyze`), existing plans in `plans/` to avoid duplication. Determine the scope: in-scope (functions/screens/flows to test), out-of-scope (explicit), assumptions.
 2. **Feature breakdown**: split the feature into small modules/sections. Each section notes: function description, business rule, main UI component, validation rule, state to verify, integration point.
 3. **Split into independent PHASES** (core principle):
    - Each phase = a group of **FULLY INDEPENDENT** features — no shared data, no overlapping scope. Phase 1 is unrelated to Phase 2.

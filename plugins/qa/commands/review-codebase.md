@@ -4,7 +4,7 @@ argument-hint: [empty = scan the whole project]
 allowed-tools: Read, Glob, Grep, Bash
 ---
 
-# /review-codebase — Review the whole project
+# /qa:review-codebase — Review the whole project
 
 Thin wrapper. All rule-inspection logic lives in **skill `review-audit`** (`${CLAUDE_PLUGIN_ROOT}/skills/review-audit`), run in **whole-codebase** mode.
 

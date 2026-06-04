@@ -1,10 +1,10 @@
 ---
-description: Add/switch the active Lark bug board and refresh field/option/dev-pic mappings in .claude/qa-claude/log-bug.config.yml from a board URL or alias (so /log-bug knows where to write)
+description: Add/switch the active Lark bug board and refresh field/option/dev-pic mappings in .claude/qa-claude/log-bug.config.yml from a board URL or alias (so /qa:log-bug knows where to write)
 argument-hint: <Lark board URL | alias to switch to> [--active]
 allowed-tools: Read, Glob, Grep, Edit, Write, Bash
 ---
 
-# /update-board — Manage the bug board registry
+# /qa:update-board — Manage the bug board registry
 
 Input: **$ARGUMENTS** (a Lark board URL to add, or an existing `alias` to switch to).
 
@@ -19,4 +19,4 @@ Run **skill `update-board`**. It edits `.claude/qa-claude/log-bug.config.yml` (c
 ## Rules
 - Only edit `.claude/qa-claude/log-bug.config.yml` — do not touch `.claude/qa-claude/.env` secrets.
 - Confirm before overwriting an existing board entry. Print the resulting active board + a 3-line summary.
-- After switching, remind the user that `/log-bug` will write to the new active board (and respects its `read_only`).
+- After switching, remind the user that `/qa:log-bug` will write to the new active board (and respects its `read_only`).

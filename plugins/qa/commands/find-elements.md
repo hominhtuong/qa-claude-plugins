@@ -4,7 +4,7 @@ argument-hint: <screen-name / feature> [web|android|ios] [navigation path if kno
 allowed-tools: Read, Glob, Grep, Edit, Write, Bash, Agent
 ---
 
-# /find-elements — Extract locators for a screen (platform router)
+# /qa:find-elements — Extract locators for a screen (platform router)
 
 Input: **$ARGUMENTS**
 
@@ -29,6 +29,6 @@ Run **skill `detect-platform`** (spec: `${CLAUDE_PLUGIN_ROOT}/rules/platform-det
 - Element **that can't be anchored by id/testid** → **skill `missing-ids`** (RECORD) collects it into the Missing ID Report for dev.
 
 ## Output
-A table `element (role) | chosen locator | raw attributes | missing id?` for the locked `platform`, ready for `/cook` (declare Screen/Page Object). Print the platform used clearly. When done → close the session (`appium_quit_session` / `browser_close`) if the navigate skill opened one.
+A table `element (role) | chosen locator | raw attributes | missing id?` for the locked `platform`, ready for `/qa:cook` (declare Screen/Page Object). Print the platform used clearly. When done → close the session (`appium_quit_session` / `browser_close`) if the navigate skill opened one.
 
-> This is the template router for the whole plugin: **detect-platform → read exactly 1 platform skill → agnostic skill**. Every other command (`/exploratory`, `/cook`, `/run`, `/fix`) follows this same shape.
+> This is the template router for the whole plugin: **detect-platform → read exactly 1 platform skill → agnostic skill**. Every other command (`/qa:exploratory`, `/qa:cook`, `/qa:run`, `/qa:fix`) follows this same shape.

@@ -17,4 +17,4 @@ Reusable capability: get clean changes onto origin safely. Runs **only after** `
 4. **Push**: `git push -u origin <branch>`. Remote rejects (branch behind remote) → `git fetch` + notify the user, do **NOT** force-push.
 5. **Report**: committed files, branch name, push result (branch URL if the remote prints it).
 
-> Only commit/push when the user requests it (via command `/push-code` or `/merge-request`). Do not act on your own.
+> Only commit/push when the user requests it (via command `/qa:push-code` or `/qa:merge-request`). Do not act on your own.

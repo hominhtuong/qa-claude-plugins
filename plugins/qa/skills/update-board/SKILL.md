@@ -1,11 +1,11 @@
 ---
 name: update-board
-description: Reusable logic to manage the Lark bug board registry in .claude/qa-claude/log-bug.config.yml — add a board from its URL (extract base/table/view/wiki ids), switch the active board by alias, and refresh field/option/dev-pic mappings from the live board. Used by the update-board command and when /log-bug needs to point at a different board.
+description: Reusable logic to manage the Lark bug board registry in .claude/qa-claude/log-bug.config.yml — add a board from its URL (extract base/table/view/wiki ids), switch the active board by alias, and refresh field/option/dev-pic mappings from the live board. Used by the update-board command and when /qa:log-bug needs to point at a different board.
 ---
 
 # Skill: update-board
 
-Edit the bug board registry so `/log-bug` writes to the right place. Target file: `.claude/qa-claude/log-bug.config.yml` (created by skill `setup`). **NEVER print tokens/secrets.**
+Edit the bug board registry so `/qa:log-bug` writes to the right place. Target file: `.claude/qa-claude/log-bug.config.yml` (created by skill `setup`). **NEVER print tokens/secrets.**
 
 ## Procedure
 1. **Locate config**: `.claude/qa-claude/log-bug.config.yml`. Missing → tell the user to run skill `setup` first.
@@ -27,4 +27,4 @@ Edit the bug board registry so `/log-bug` writes to the right place. Target file
 ## Rules
 - Edit ONLY `.claude/qa-claude/log-bug.config.yml`. Never touch `.claude/qa-claude/.env` secrets, never print tokens.
 - This file is the user's own copy — `setup` does NOT overwrite it (only the `.example.yml` reference is refreshed).
-- After a switch, note that `/log-bug` now targets the new board and enforces its `read_only` guard.
+- After a switch, note that `/qa:log-bug` now targets the new board and enforces its `read_only` guard.

@@ -4,11 +4,11 @@ argument-hint: <code | test result | structure to analyze>
 allowed-tools: Read, Glob, Grep, Bash
 ---
 
-# /analyze — Automation analysis
+# /qa:analyze — Automation analysis
 
 You are a QA Automation Analyst. Your task is to analyze the codebase, requirements, or test results.
 
-> Want to analyze a SPEC/PRD doc from a QA perspective (for test-case design)? Use **`/analyze-spec`**.
+> Want to analyze a SPEC/PRD doc from a QA perspective (for test-case design)? Use **`/qa:analyze-spec`**.
 
 ## Input
 Analysis request: $ARGUMENTS

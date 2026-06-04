@@ -13,7 +13,7 @@ Reusable capability: run the suite safely — compile first, check the device, r
 3. **Device preflight** (the script handles it, but understand the mechanism): read `deviceName` from capabilities — `emulator-*` = emulator (not running → `./scripts/start-emulator.sh`, poll 5s, timeout 60s); otherwise = real device (must be in `adb devices` / `xcrun xctrace list devices`, else abort).
 4. **Run**: `./scripts/run-android.sh` · `./scripts/run-ios.sh` · `./scripts/run-all.sh` (recommended). Custom suite → `mvn test -DsuiteXmlFile=<suite>`.
 5. **Report the result**: exit code, the latest report under `reports/<date>/`, summary of passed/failed/skipped/duration.
-6. **Triage every FAIL** ([failure-triage.md](../../rules/failure-triage.md)) — **before suggesting `/fix`**: for each red test, classify the root cause as `[APP-BUG]` (app is wrong — report to dev, do NOT fix the test to make it green) vs `[FRAMEWORK]` (locator/automation wrong — `/fix`) vs `[ENV]`/`[DATA]`. Cross-check the stack trace + screenshot in the ExtentReport (the message starts with the label). **Summarize fails by label** (e.g. "3 fail: 1 [APP-BUG], 2 [FRAMEWORK]") so it's clear whether the "app is broken" or the "test is broken". Only `[FRAMEWORK]`/`[ENV]`/`[DATA]` fails warrant a `/fix` suggestion; `[APP-BUG]` → list the defect to hand to dev.
+6. **Triage every FAIL** ([failure-triage.md](../../rules/failure-triage.md)) — **before suggesting `/qa:fix`**: for each red test, classify the root cause as `[APP-BUG]` (app is wrong — report to dev, do NOT fix the test to make it green) vs `[FRAMEWORK]` (locator/automation wrong — `/qa:fix`) vs `[ENV]`/`[DATA]`. Cross-check the stack trace + screenshot in the ExtentReport (the message starts with the label). **Summarize fails by label** (e.g. "3 fail: 1 [APP-BUG], 2 [FRAMEWORK]") so it's clear whether the "app is broken" or the "test is broken". Only `[FRAMEWORK]`/`[ENV]`/`[DATA]` fails warrant a `/qa:fix` suggestion; `[APP-BUG]` → list the defect to hand to dev.
 
 ## Final step — Upload report + Notify (optional, if enabled)
 Only runs when the project has a `.claude/qa-claude/.env` (created by the `setup` skill). Every flag defaults to `false` → silently skipped. The scripts read `.env` from the project, **cross-platform** (`python3` macOS/Linux, `python` Windows). Each group picks **at most 1** channel:
@@ -28,7 +28,7 @@ Only runs when the project has a `.claude/qa-claude/.env` (created by the `setup
 
 Every script **no-ops itself** when its flag is off / config is missing → never breaks the run. Missing `wrangler`/`aws`/`python` → run the `doctor` skill.
 
-## Appium server — NO need to start it manually for `/run`
-The test runtime uses `AppiumServer.shared()` which calls `usingAnyFreePort()` → starts Appium on **any free port**, independent of whatever port is running. So `/run` does **not** call `start-appium.sh`. To point at an existing server (e.g. MCP 4723) → `export APPIUM_SERVER_URL=http://127.0.0.1:4723` before running. (The fixed port 4723 + `start-appium.sh` are only for **MCP exploratory**, see the `navigate-app` skill.)
+## Appium server — NO need to start it manually for `/qa:run`
+The test runtime uses `AppiumServer.shared()` which calls `usingAnyFreePort()` → starts Appium on **any free port**, independent of whatever port is running. So `/qa:run` does **not** call `start-appium.sh`. To point at an existing server (e.g. MCP 4723) → `export APPIUM_SERVER_URL=http://127.0.0.1:4723` before running. (The fixed port 4723 + `start-appium.sh` are only for **MCP exploratory**, see the `navigate-app` skill.)
 
 > Do NOT fix test code — just run. The TestNG XML must have `GoToHomeTest` as the first `<test>` block.

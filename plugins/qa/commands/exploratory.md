@@ -4,14 +4,14 @@ argument-hint: <feature-name> [web|android|ios] [navigation path if known]
 allowed-tools: Read, Glob, Grep, Edit, Write, Bash, Agent
 ---
 
-# /exploratory — Explore & find bugs in a feature (platform router)
+# /qa:exploratory — Explore & find bugs in a feature (platform router)
 
 Feature to explore: **$ARGUMENTS**
 
 **Goal #1 — FIND BUGS**: probe the feature screen like a **senior exploratory QA** to surface app defects → produce a **bug report for dev** following [exploratory-bug-report-template.md](../rules/exploratory-bug-report-template.md).
-**Goal #2 — Prepare tests (ONLY when clean)**: feature with **no `[APP-BUG]`** → extract elements → ready for `/plan-tests`/`/cook`.
+**Goal #2 — Prepare tests (ONLY when clean)**: feature with **no `[APP-BUG]`** → extract elements → ready for `/qa:plan-tests`/`/qa:cook`.
 
-> ⚠️ **GATE**: *Automation only works when the app is correct.* A feature with `[APP-BUG]` → **do NOT write tests** for that part, the deliverable is a **bug report**. Only a **clean** feature proceeds to `/plan-tests`.
+> ⚠️ **GATE**: *Automation only works when the app is correct.* A feature with `[APP-BUG]` → **do NOT write tests** for that part, the deliverable is a **bug report**. Only a **clean** feature proceeds to `/qa:plan-tests`.
 > ⚠️ **Suspect the app by default**: every wrong/red observation **MUST** be triaged per [failure-triage.md](../rules/failure-triage.md): `[APP-BUG]` (app wrong — blocks tests) vs `[FRAMEWORK]` (our element capture/automation is wrong) vs `[ENV]`/`[DATA]`. Do NOT assume the app is correct.
 
 ## Step 0 — Lock platform (routing)
@@ -36,7 +36,7 @@ Open the correct find-elements skill per platform: **web** `find-elements-web` �
 Per `exploratory-method`: write `reports/exploratory/<group>/dev-bug-report-<ddMMMyyyy>.md` following the template (each bug: Screen · Verbatim symptom · Root cause if found · Impact · Expectation · Evidence · Defect ID) + a **✅ Checked — NO bug** section + **❓ NEEDS-TRIAGE** + environment notes. Append each `[APP-BUG]` to the register `reports/exploratory/bug-summary.md`.
 
 ## Step 5 — GATE DECISION + finish
-- 🔴 **Has `[APP-BUG]`** → deliverable = bug report for dev. Do **NOT** `/plan-tests`/`/cook` for the broken part.
-- 🟢 **No `[APP-BUG]`** → app correct → Screen/elements extracted → suggest **`/plan-tests <feature-name>`**.
+- 🔴 **Has `[APP-BUG]`** → deliverable = bug report for dev. Do **NOT** `/qa:plan-tests`/`/qa:cook` for the broken part.
+- 🟢 **No `[APP-BUG]`** → app correct → Screen/elements extracted → suggest **`/qa:plan-tests <feature-name>`**.
 
 Close the session (`appium_quit_session` / `browser_close`). Print: platform, bug report path (+ register), list of `[APP-BUG]`, Screen/sitemap updated (if clean), **gate conclusion**.

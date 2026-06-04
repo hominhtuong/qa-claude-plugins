@@ -4,7 +4,7 @@ argument-hint: [web | android (default for app) | ios | all | specific test/feat
 allowed-tools: Read, Glob, Grep, Bash
 ---
 
-# /run — Compile & run tests (platform router)
+# /qa:run — Compile & run tests (platform router)
 
 Input: **$ARGUMENTS** (specific platform/suite/test).
 
@@ -19,7 +19,7 @@ Run **skill `detect-platform`**: argument `web|android|ios|all` → use it direc
 
 ## Step 2 — Report results & triage
 - Exit code, latest report, passed/failed/skipped/duration.
-- **Triage every FAIL** ([failure-triage.md](../rules/failure-triage.md)): `[APP-BUG]` (app wrong → list the defect, hand to dev, do NOT fix the test) vs `[FRAMEWORK]`/`[ENV]`/`[DATA]` (→ suggest `/fix`). Summarize fails by label ("3 fail: 1 [APP-BUG], 2 [FRAMEWORK]").
+- **Triage every FAIL** ([failure-triage.md](../rules/failure-triage.md)): `[APP-BUG]` (app wrong → list the defect, hand to dev, do NOT fix the test) vs `[FRAMEWORK]`/`[ENV]`/`[DATA]` (→ suggest `/qa:fix`). Summarize fails by label ("3 fail: 1 [APP-BUG], 2 [FRAMEWORK]").
 
 ## Step 3 — Push report + Lark notify (automatic, if enabled)
 

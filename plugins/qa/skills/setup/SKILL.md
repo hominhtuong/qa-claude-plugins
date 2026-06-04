@@ -27,10 +27,10 @@ Prepare a project to use this plugin's config + optional integrations. All plugi
 
 3. **Prompt the user to fill their files** (both git-ignored / theirs, never overwritten):
    - `.claude/qa-claude/.env` — Lark/R2/S3/notify secrets (only the channel they enable via `ENABLE_*`).
-   - `.claude/qa-claude/log-bug.config.yml` — Lark bug board ids + `dev_pic` open_ids + defaults (for `/log-bug`).
+   - `.claude/qa-claude/log-bug.config.yml` — Lark bug board ids + `dev_pic` open_ids + defaults (for `/qa:log-bug`).
 
 ## Principles
 - **Secrets + user config live in `.claude/qa-claude/`** (`.env` git-ignored) — NEVER in the plugin, NEVER in the project's root `./.env`.
 - **SCAFFOLD vs OVERWRITE**: your `.env` and `log-bug.config.yml` are never clobbered; the `.example` references + `testcase-template.md` are refreshed so a plugin update brings the latest schema/format (diff the `.example` against your file after updating).
 - Idempotent: safe to re-run; does not duplicate `.gitignore` lines.
-- After setup, `/run` auto-pushes the report + sends Lark if the flags are enabled (see skills `run-app`/`run-web`); `/log-bug` reads the board config.
+- After setup, `/qa:run` auto-pushes the report + sends Lark if the flags are enabled (see skills `run-app`/`run-web`); `/qa:log-bug` reads the board config.

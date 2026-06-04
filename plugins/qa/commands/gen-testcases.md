@@ -4,11 +4,11 @@ argument-hint: <path/to/plan.md | feature name + spec/Figma link>
 allowed-tools: Read, Glob, Grep, Edit, Write, Bash, Agent
 ---
 
-# /gen-testcases — Generate test cases
+# /qa:gen-testcases — Generate test cases
 
 You are a **Senior QC Engineer**. Request: **$ARGUMENTS**. The output must be production quality — detailed, accurate, immediately executable without further explanation.
 
-> Want to write AUTOMATION test code instead? Use **`/cook`**. To plan the test cases first, use **`/plan-gen-testcases`**.
+> Want to write AUTOMATION test code instead? Use **`/qa:cook`**. To plan the test cases first, use **`/qa:plan-gen-testcases`**.
 
 > **LANGUAGE — RULE #1 (MANDATORY)**: Generate all test case content in Vietnamese (with diacritics) — description, precondition, steps, expected, section title. "Đăng nhập" is NOT "Dang nhap". When spawning a sub-agent, the agent prompt MUST repeat this rule verbatim. Only use English when the user requests `language: English`.
 
@@ -19,11 +19,11 @@ You are a **Senior QC Engineer**. Request: **$ARGUMENTS**. The output must be pr
 ## Gathering information (MUST ask if missing)
 1. Spec/PRD/ticket link (Google Docs / Lark wiki / Notion...)?
 2. Figma link (if there's UI)?
-3. Is there already a test-case plan from `/plan-gen-testcases`? If so → read that plan as the main input.
+3. Is there already a test-case plan from `/qa:plan-gen-testcases`? If so → read that plan as the main input.
 4. Determine the **output folder + prefix**: `results/<feature-name>/` (kebab-case, lowercase, no diacritics); prefix = feature abbreviation (e.g. `wir` for "Warehouse Inventory Report").
 
 ## Classifying the input
-- **Path to a plan `.md`** (from `/plan-gen-testcases`) → MODE A (multi-phase).
+- **Path to a plan `.md`** (from `/qa:plan-gen-testcases`) → MODE A (multi-phase).
 - **Direct description + link** → MODE B (gather data + execute).
 
 ## MODE A — Has a plan → parallel multi-phase
@@ -56,4 +56,4 @@ On detecting a contradiction → **STOP, ask the user** (follow Docs / follow Fi
 - Write TCs per skill `gen-testcases`: 1 objective/TC, steps are actions only, expected separated out, **MANDATORY negative coverage**, no redundant expected & no color-code checks, correct multi-result format.
 - Build the file per skill `tc-template`: columns/header/freeze/COUNTIF per the template contract; import code from the project's helper (e.g. `configs/tc_template`), not inline.
 - **DO NOT push each phase separately** — push only after merging. Return both the local path + Drive URL.
-- If there's no plan and the work is large (>50 TCs, many modules) → suggest `/plan-gen-testcases` first.
+- If there's no plan and the work is large (>50 TCs, many modules) → suggest `/qa:plan-gen-testcases` first.

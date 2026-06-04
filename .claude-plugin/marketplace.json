@@ -4,13 +4,13 @@
     "name": "Mitu Ultra",
     "email": "support@mituultra.com"
   },
-  "description": "Open-source Claude Code plugin for every QA/QC engineer using AI: web/mobile automation, test-case generation, exploratory testing, review — one prefix-free plugin, install once and use across projects. Dual-purpose commands auto-detect automation vs manual mode and the right platform.",
+  "description": "Open-source Claude Code plugin for every QA/QC engineer using AI: web/mobile automation, test-case generation, exploratory testing, review. Install once, use across projects; commands are namespaced as /qa:<command>. Automation and manual QA have distinct command names; automation commands auto-route by platform (web/android/ios).",
   "version": "0.0.1",
   "plugins": [
     {
       "name": "qa",
       "source": "./plugins/qa",
-      "description": "All-in-one QA toolkit (prefix-free commands). Automation: find-elements/exploratory/plan-tests/cook/run/fix/review/push-code/merge-request (Playwright Web + Appium iOS/Android). Manual QA: generate test cases to xlsx/Sheet, analyze specs, log-bug. Shared commands auto-detect automation/manual mode + web/android/ios platform. Optional Lark/Slack/Teams/Telegram notify + Cloudflare R2 / S3 report upload."
+      "description": "All-in-one QA toolkit; commands namespaced /qa:<name>. Automation (Playwright Web + Appium iOS/Android, auto-routes by platform): exploratory/plan-tests/find-elements/cook/run/fix/analyze/count-cases/review/push-code/merge-request. Manual QA (distinct names): analyze-spec/plan-gen-testcases/gen-testcases/count-testcases/log-bug/update-board. Optional Lark/Slack/Teams/Telegram notify + Cloudflare R2 / S3 report upload."
     }
   ]
 }

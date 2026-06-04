@@ -4,7 +4,7 @@ argument-hint: [optional PR/MR title] [--target <target branch, default main>]
 allowed-tools: Read, Glob, Grep, Edit, Write, Bash
 ---
 
-# /merge-request — Open a clean PR/MR (no conflicts, no lost code)
+# /qa:merge-request — Open a clean PR/MR (no conflicts, no lost code)
 
 Input: **$ARGUMENTS** (optional PR/MR title; target defaults to `main`).
 
@@ -19,7 +19,7 @@ Read `git remote get-url origin` and pick the tool:
 ## Procedure (follow the order)
 
 ### 1. Quality gate — skills `review-audit` + `fix-by-layer` + `build-verify`
-Same as steps 1–3 of `/push-code`: `review-audit` → auto-fix clear Criticals via `fix-by-layer` / STOP if a decision is needed → `build-verify` green. Not clean + green → do **not** open the PR/MR.
+Same as steps 1–3 of `/qa:push-code`: `review-audit` → auto-fix clear Criticals via `fix-by-layer` / STOP if a decision is needed → `build-verify` green. Not clean + green → do **not** open the PR/MR.
 
 ### 2. Settle branch & commit — skill `commit-push` (branch + commit only)
 Determine `FEATURE` (on `main` → create `feat/<slug>`, never PR/MR main→main). Commit all pending changes (message `$ARGUMENTS` if provided + Co-Authored-By trailer). **Do not push yet.** Determine `TARGET` (default `main` or `--target`).

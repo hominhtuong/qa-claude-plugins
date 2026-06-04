@@ -4,7 +4,7 @@ argument-hint: [export (default) | record <screen> <element> | resolve <screen> 
 allowed-tools: Read, Glob, Grep, Edit, Write, Bash
 ---
 
-# /missing-test-ids — Manage "test-id debt"
+# /qa:missing-test-ids — Manage "test-id debt"
 
 Input: **$ARGUMENTS** (empty → default `export`).
 

@@ -19,7 +19,7 @@ Reusable capability: probe a feature → **find app bugs** → bug report for th
 7. **Sync the register**: append each `[APP-BUG]` into `reports/exploratory/bug-summary.md` (assign APP-ID, update the per-function count table + severity distribution).
 
 ## GATE decision
-- 🔴 **Has `[APP-BUG]`** → the feature is NOT done. **Deliverable = bug report** for the dev. Do **NOT** proceed to `/plan-tests`/`/cook` for the broken part (only cleanly separable clean parts move on).
-- 🟢 **No `[APP-BUG]`** (only possibly FW/ENV/DATA) → app is correct → extract clean elements → ready for **`/plan-tests`**.
+- 🔴 **Has `[APP-BUG]`** → the feature is NOT done. **Deliverable = bug report** for the dev. Do **NOT** proceed to `/qa:plan-tests`/`/qa:cook` for the broken part (only cleanly separable clean parts move on).
+- 🟢 **No `[APP-BUG]`** (only possibly FW/ENV/DATA) → app is correct → extract clean elements → ready for **`/qa:plan-tests`**.
 
 > *Automation runs only when the app is already correct.* Planning is the `plan-method` skill; automation errors (FW) are fixed via the `fix-by-layer` skill, NOT recorded in the app bug section.

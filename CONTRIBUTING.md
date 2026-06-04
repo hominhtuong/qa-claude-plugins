@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for helping improve **qa-claude-plugins**. This repo is a single Claude Code plugin (`qa`) published through the `qa-claude` marketplace. Keep these conventions so the plugin stays prefix-free, token-efficient, and consistent.
+Thanks for helping improve **qa-claude-plugins**. This repo is a single Claude Code plugin (`qa`) published through the `qa-claude` marketplace. Keep these conventions so the plugin stays consistent, token-efficient, and easy to use. (Plugin commands are invoked as `/qa:<name>` — the namespace is required by Claude Code.)
 
 ## Repo layout
 
@@ -19,7 +19,7 @@ qa-claude-plugins/
 
 ## Invariants
 
-1. **One plugin, prefix-free commands.** Every command is invoked bare (`/cook`, `/run`). Do not create commands that collide in name with different behaviour — give each a distinct, self-explanatory name (e.g. `cook` for automation vs `gen-testcases` for manual test cases).
+1. **One plugin, namespaced commands.** Every command is invoked as `/qa:<name>` (e.g. `/qa:cook`, `/qa:run`); the `qa:` namespace is mandatory for plugins. Do not create commands that collide in name with different behaviour — give each a distinct, self-explanatory name (e.g. `cook` for automation vs `gen-testcases` for manual test cases). Skills are internal building blocks (model-invoked); users call commands.
 2. **`${CLAUDE_PLUGIN_ROOT}` is per-plugin.** A file that a command/skill *reads* must live in this plugin; call other skills **by name** (e.g. `commit-push`, `gen-testcases`). Never reference `.claude/rules|skills|agents/` from inside a plugin file.
 3. **Automation commands route by platform.** They run `detect-platform` (web/android/ios) first, then read only the matching skill/rules (`rules/web/*` vs `rules/app/*`). Adding a platform = add a `*-<platform>` skill + one router line, not a giant shared skill.
 4. **Project-side config goes in `.claude/qa-claude/`** (installed by `setup`): secrets in `.env`, user data in `log-bug.config.yml` (both never overwritten); `.example` references + `testcase-template.md` are refreshed on update. Never put secrets in the plugin; keep the plugin's `.env` separate from the project's own `./.env`.

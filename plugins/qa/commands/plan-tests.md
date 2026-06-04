@@ -4,13 +4,13 @@ argument-hint: <feature-name> [web|android|ios] [requirement description / Lark 
 allowed-tools: Read, Glob, Grep, Write, Edit, Bash, WebSearch, Agent
 ---
 
-# /plan-tests — Exploratory gate → Design an automation test plan (platform router)
+# /qa:plan-tests — Exploratory gate → Design an automation test plan (platform router)
 
 User request: **$ARGUMENTS**
 
-> Want to plan MANUAL TEST CASES (not automation code) instead? Use **`/plan-gen-testcases`**.
+> Want to plan MANUAL TEST CASES (not automation code) instead? Use **`/qa:plan-gen-testcases`**.
 
-Goal: create a **solid plan (.md file)** describing how to implement the tests. `/cook` executes it afterward. **Do NOT write code** at this step. (The name `/plan-tests` distinguishes it from plan-release/plan-sprint.)
+Goal: create a **solid plan (.md file)** describing how to implement the tests. `/qa:cook` executes it afterward. **Do NOT write code** at this step. (The name `/qa:plan-tests` distinguishes it from plan-release/plan-sprint.)
 
 > 🚦 **GATE — exploratory first, plan after**: *Automation only works when the app is correct.* A feature with `[APP-BUG]` → **do NOT make a test plan**, the deliverable is a bug report for dev. Only a **clean** exploratory leads to a plan.
 
@@ -18,7 +18,7 @@ Goal: create a **solid plan (.md file)** describing how to implement the tests. 
 Run **skill `detect-platform`** → one `platform`. It decides which design-pattern rules to read in Step 2.
 
 ## Step 1 — EXPLORATORY GATE (before anything)
-1. Is there a recent bug report yet? `reports/exploratory/<group>/dev-bug-report-*.md` + `bug-summary.md`. None/stale/changed → run **`/exploratory <feature-name> <platform>`**.
+1. Is there a recent bug report yet? `reports/exploratory/<group>/dev-bug-report-*.md` + `bug-summary.md`. None/stale/changed → run **`/qa:exploratory <feature-name> <platform>`**.
 2. Read the result:
    - 🔴 **Has `[APP-BUG]`** → **STOP planning** for that part; print "Feature NOT complete — N app bugs, see `dev-bug-report-*.md`". Do NOT create `plans/<feature>/plan.md`.
    - 🟢 **No `[APP-BUG]`** → app correct → continue to Step 2. Elements extracted during exploratory are used for Layer 1/2.
@@ -46,5 +46,5 @@ Structure (per `plan-method`):
 
 ## Principles
 - Layering: `screens` (no-assert) → `tests` (assert) → `regression/smoke` (compose). Feature starts from Home.
-- The plan **lists** the sitemap screens/nodes to create — only `/cook` writes them for real. The plan records the **correct expectation** (per spec) so `/cook` keeps the test honest.
-- After writing the file → print the plan path + platform + a 3-5 line summary for review before `/cook`.
+- The plan **lists** the sitemap screens/nodes to create — only `/qa:cook` writes them for real. The plan records the **correct expectation** (per spec) so `/qa:cook` keeps the test honest.
+- After writing the file → print the plan path + platform + a 3-5 line summary for review before `/qa:cook`.

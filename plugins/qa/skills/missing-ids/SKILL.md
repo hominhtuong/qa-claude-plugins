@@ -27,4 +27,4 @@ When `declare-screen`/`cook`/`fix` declares an element for a Screen that **canno
 ## Capability 3 — RESOLVE (after dev adds the id)
 Dev adds the id → switch the locator field to `@MobileFindBy(id = "...")` in the Screen + update `elements.json` → re-run EXPORT so the list shrinks. Verify the compile is green via skill `build-verify`.
 
-> This skill references rules, it does not duplicate them. Callers: skill `declare-screen`, commands `/cook` `/fix` `/exploratory` `/review-*` `/missing-test-ids`.
+> This skill references rules, it does not duplicate them. Callers: skill `declare-screen`, commands `/qa:cook` `/qa:fix` `/qa:exploratory` `/review-*` `/qa:missing-test-ids`.
