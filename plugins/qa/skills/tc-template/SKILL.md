@@ -45,7 +45,7 @@ A reusable capability to **build the test case spreadsheet file** per the projec
 5. **Multi-result merge**: for a group of TCs with the same description, merge cells in column B (Description) and C (Pre-Condition) across the rows (`merge_with_prev=True` from the 2nd row onward).
 6. **Formatting**: header rows 7-8 bg `#CCFFFF` bold center; data columns C-O wrap + align top; **freeze row 8** (`A9`); thin border `#D0D0D0` across the whole data area; **do not fix row height** (auto-resize); Time Est column I is minutes/TC (used to compute the B6 total).
 7. **TC_ID RESET per sheet**: each sheet restarts from `TC_001`. Multi-module => one sheet per module (`create_multi_sheet_tc_spreadsheet`), each sheet with its own header + COUNTIF.
-8. **Save locally first**: `save_xlsx_local(...)` => `.xlsx` file in `results/<feature>/` (hard backup). Name it per [output-format §2](../../rules/output-format.md): `{prefix}-phase-N.xlsx`, merged => `{prefix}-final.xlsx`.
+8. **Save locally first**: `save_xlsx_local(...)` => `.xlsx` file in `results/<feature-name>/` (hard backup). Name it per [output-format §2](../../rules/output-format.md): `{prefix}-phase-N.xlsx`, merged => `{prefix}-final.xlsx`.
 9. **Upload via the priority chain** ([output-format §4](../../rules/output-format.md)): `LARK_DRIVE_FOLDER_ID` (Lark Sheet) > `GOOGLE_DRIVE_FOLDER_ID` (Google Sheets) > local-only. Read the folder ID from config (placeholder), do not hardcode. Lark fails => try Google; both fail => confirm local is OK.
 10. **Return**: both the local path **and** the Drive URL (a single URL after merging all phases). Do NOT push each phase separately.
 

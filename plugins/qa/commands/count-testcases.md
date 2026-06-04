@@ -13,7 +13,7 @@ You are a **QA Testcase Statistics Reporter**. Request: **$ARGUMENTS**. Task: ac
 > **LANGUAGE — RULE #1**: Generate the report in Vietnamese (with diacritics).
 
 ## Input
-- Path to a created `.xlsx` file (e.g. `results/<feature>/<prefix>-final.xlsx`), OR
+- Path to a created `.xlsx` file (e.g. `results/<feature-name>/<prefix>-final.xlsx`), OR
 - A Google/Lark Sheet link, OR
 - A plan `.md` file (`plans/<feature>/<prefix>.md`) — count by the Test Case Matrix, OR
 - A feature name → find the corresponding file in `results/` and `plans/`.

@@ -67,7 +67,7 @@ Split into **2 separate sections**, do not mix:
   ```
 - When summarizing `/run` results: group FAILs by label (how many APP-BUG vs FRAMEWORK vs ENV/DATA) → the reader instantly knows whether it's "app broken" or "test broken".
 
-### 3c. HTML test-case report (`report-template.html` → `results/<module>/<module>-testcase-report.html`)
+### 3c. HTML test-case report (`report-template.html` → `results/<feature-name>/<feature-name>-testcase-report.html`)
 - Use a **Result/Triage** column/legend (`Pass` · `App-bug` · `Framework` · `Env/Data` · `Needs-triage`) + a **Defect summary** section listing `[APP-BUG]` to hand off to dev.
 
 ---
