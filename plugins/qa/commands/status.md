@@ -40,7 +40,7 @@ You are a QA Project Status Reporter. Give a quick overview of the project's cur
 - Screens without tests: [list or "None"]
 
 ### Recent Reports
-- Latest: reports/<date>/<report>.html
+- Latest: results/tests/<ddMMMyyyy>/<report>.html
 ```
 
 ## Rules

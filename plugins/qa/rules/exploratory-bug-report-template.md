@@ -1,12 +1,12 @@
 # Exploratory Bug Report — Template (standard format to send to dev)
 
-> **Mandatory** output format for `/exploratory` (and for the exploratory-gate of `/plan-tests`). Output lives in the PROJECT under `reports/exploratory/` (created at run time).
+> **Mandatory** output format for `/exploratory` (and for the exploratory-gate of `/plan-tests`). Output lives in the PROJECT under `results/exploratory/` (created at run time).
 >
 > **Output language**: the report body is written in **Vietnamese (with diacritics)** — it is a deliverable sent to the Vietnamese dev team. The instructions below are in English; the template field labels are kept in Vietnamese as they are part of the deliverable.
 >
-> - **Output file**: `reports/exploratory/<group>/dev-bug-report-<ddMMMyyyy>.md` (e.g. `dev-bug-report-03Jun2026.md`). If running multiple groups on the same day → one file/day grouping all groups, or one file per group.
-> - **Screenshot evidence**: saved in `reports/exploratory/<group>/screenshots/`, **named by BUG-ID** (`02-APP01-published-tab-sqlite-crash.png`). Each `[APP-BUG]` MUST have at least one screenshot.
-> - Each bug is also **appended to the defect register** `reports/exploratory/bug-summary.md` (assign an APP-ID, update the count table + severity distribution).
+> - **Output file**: `results/exploratory/<group>/dev-bug-report-<ddMMMyyyy>.md` (e.g. `dev-bug-report-03Jun2026.md`). If running multiple groups on the same day → one file/day grouping all groups, or one file per group.
+> - **Screenshot evidence**: saved in `results/exploratory/<group>/screenshots/`, **named by BUG-ID** (`02-APP01-published-tab-sqlite-crash.png`). Each `[APP-BUG]` MUST have at least one screenshot.
+> - Each bug is also **appended to the defect register** `results/exploratory/bug-summary.md` (assign an APP-ID, update the count table + severity distribution).
 > - Assign labels per [failure-triage.md](failure-triage.md). **Only `[APP-BUG]` blocks test writing** (see `/plan-tests`).
 
 ---
@@ -30,7 +30,7 @@ The report body below is the Vietnamese-language deliverable; keep the Vietnames
 - **Root cause (nếu suy ra được từ thông báo)**: <phân tích ngắn — vd conflict target SQL sai, sai công thức>.
 - **Tác động**: <ảnh hưởng người dùng / nghiệp vụ — vd lộ schema, sai chứng từ pháp lý>.
 - **Kỳ vọng**: <hành vi đúng theo spec/PRD>.
-- **Bằng chứng**: `reports/exploratory/<group>/screenshots/<file>.png`.
+- **Bằng chứng**: `results/exploratory/<group>/screenshots/<file>.png`.
 - *(Defect ID register: **APP-NN**.)*
 
 ## 🔴 BUG-2 (Critical) — …

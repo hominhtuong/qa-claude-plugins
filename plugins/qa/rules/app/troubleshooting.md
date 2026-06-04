@@ -83,7 +83,7 @@ Common errors and how to handle them.
 - Check `configurations/cloudflare.properties` — `ENABLE_CF_PUSH=true`?
 - `which wrangler` — is wrangler installed?
 - `npm install -g wrangler` if not present
-- Check `reports/upload-logs/` for error logs
+- Check `results/tests/.upload-logs/` for error logs
 
 ### 10. Lark notification not sent
 **Cause**: Wrong webhook URL or wrong secret

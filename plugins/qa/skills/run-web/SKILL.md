@@ -15,13 +15,13 @@ Reusable capability: run the suite safely — compile first, run the right targe
    - 1 class: `make test CLASS=<Class>` (≈ `mvn test -Dtest=<Class>`). 1 method: `make method CLASS=<Class> METHOD=<method>` (≈ `mvn test -Dtest=<Class>#<method>`).
    - Watch it live (debug): `make regression HEADED=1` (force headed + slow), tune with `SLOWMO=<ms>` / `PAUSE=<ms>`.
    - Change env/browser: `make <target> ENV=staging BROWSER=chromium`.
-4. **Report the result**: exit code + the latest report under `results/reports/<ddMMMyyyy>/<runTs>/` (ExtentReports Spark HTML + `screenshots/` + `traces/`). Summarize Total/Passed/Failed/Skipped + duration; each test has a screenshot (pass & fail) + the URL at the end embedded in the report.
+4. **Report the result**: exit code + the latest report under `results/tests/<ddMMMyyyy>/<runTs>/` (ExtentReports Spark HTML + `screenshots/` + `traces/`). Summarize Total/Passed/Failed/Skipped + duration; each test has a screenshot (pass & fail) + the URL at the end embedded in the report.
 5. **Triage every FAIL** ([failure-triage.md](../../rules/failure-triage.md)) — **before suggesting `/qa:fix`**: for each red test, classify the root cause as `[APP-BUG]` (app is wrong — report to dev, do NOT fix the test to make it green) vs `[FRAMEWORK]` (locator/automation wrong — `/qa:fix`) vs `[ENV]`/`[DATA]`. Cross-check the stack trace + screenshot + URL in the ExtentReport. **Summarize fails by label** (e.g. "3 fail: 1 [APP-BUG], 2 [FRAMEWORK]") so it's clear whether the "app is broken" or the "test is broken". Only `[FRAMEWORK]`/`[ENV]`/`[DATA]` fails warrant a `/qa:fix` suggestion; `[APP-BUG]` → list the defect to hand to dev.
 
 ## Final step — Upload report + Notify (optional, if enabled)
 Only runs when the project has a `.claude/qa-claude/.env` (created by the `setup` skill). Every flag defaults to `false` → silently skipped. The scripts read `.env` from the project, **cross-platform** (`python3` macOS/Linux, `python` Windows). Each group picks **at most 1** channel:
 
-1. **Upload report** (`<rpt>` = `results/reports/<date>/<runTs>/<report>.html`):
+1. **Upload report** (`<rpt>` = `results/tests/<ddMMMyyyy>/<runTs>/<report>.html`):
    - R2 (`ENABLE_CF_PUSH`): `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/push_report.py <rpt>`
    - or S3 (`ENABLE_S3_PUSH`): `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/push_s3.py <rpt>`
    - Capture the `REPORT_URL=<url>` line.

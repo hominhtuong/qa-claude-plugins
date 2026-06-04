@@ -21,7 +21,7 @@ Prepare a project to use this plugin's config + optional integrations. All plugi
    | `.env.example` · `log-bug.config.example.yml` | references — **OVERWRITE** (refreshed each run / on update) |
    | `testcase-template.md` | 📄 test-case format (plugin-owned) — **OVERWRITE** |
 
-   Then it adds `.claude/qa-claude/.env`, `.qa-venv/`, `reports/upload-logs/` to `.gitignore`, and runs **doctor** (`--no-fix` to skip auto-installing `wrangler`).
+   Then it adds `.claude/qa-claude/.env`, `.qa-venv/`, `results/tests/.upload-logs/` to `.gitignore`, and runs **doctor** (`--no-fix` to skip auto-installing `wrangler`).
 
 2. **Read the doctor output**: a required tool still missing (python/node/java/mvn) → the script prints the **correct install command per OS**; hand it to the user, then re-run. Do NOT auto-install system toolchains.
 

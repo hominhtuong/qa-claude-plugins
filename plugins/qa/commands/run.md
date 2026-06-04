@@ -14,7 +14,7 @@ Run **skill `detect-platform`**: argument `web|android|ios|all` → use it direc
 ## Step 1 — Run the CORRECT platform skill (only 1)
 > Read only the skill matching `platform`.
 
-- **web** → skill **`run-web`**: compile → `make smoke|regression` or `mvn test -Dtest=<Class#method>` → ExtentReports report `results/reports/<date>/`.
+- **web** → skill **`run-web`**: compile → `make smoke|regression` or `mvn test -Dtest=<Class#method>` → ExtentReports report `results/tests/<ddMMMyyyy>/`.
 - **android | ios** → skill **`run-app`**: compile (`mvn clean compile test-compile`) → device preflight (`emulator-*` auto-start; a real device must be in `adb devices`/`xcrun`) → `./scripts/run-android.sh` / `run-ios.sh` / `run-all.sh` (or `mvn test -DsuiteXmlFile=<suite>`). The TestNG XML must have `GoToHomeTest` as the first `<test>` block.
 
 ## Step 2 — Report results & triage

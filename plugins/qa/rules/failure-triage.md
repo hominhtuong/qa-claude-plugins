@@ -52,7 +52,7 @@ FAIL / element-not-found
 
 ## 3. How to report — clear attribution in BOTH reports
 
-### 3a. Exploratory report (`reports/exploratory/<group>/report.md`)
+### 3a. Exploratory report (`results/exploratory/<group>/report.md`)
 Split into **2 separate sections**, do not mix:
 - **🐛 App defects (`[APP-BUG]`)** — table: `# | Màn | Kỳ vọng | Thực tế | Mức độ | Bằng chứng (screenshot) | Bước tái hiện`.
 - **🧰 Framework / locator issues (`[FRAMEWORK]`/`[ENV]`/`[DATA]`)** — table: `# | Vấn đề | Nguyên nhân | Cách xử lý`.
@@ -67,7 +67,7 @@ Split into **2 separate sections**, do not mix:
   ```
 - When summarizing `/run` results: group FAILs by label (how many APP-BUG vs FRAMEWORK vs ENV/DATA) → the reader instantly knows whether it's "app broken" or "test broken".
 
-### 3c. HTML test-case report (`report-template.html` → `docs/<module>-testcase-report.html`)
+### 3c. HTML test-case report (`report-template.html` → `results/<module>/<module>-testcase-report.html`)
 - Use a **Result/Triage** column/legend (`Pass` · `App-bug` · `Framework` · `Env/Data` · `Needs-triage`) + a **Defect summary** section listing `[APP-BUG]` to hand off to dev.
 
 ---

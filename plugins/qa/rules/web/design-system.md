@@ -63,7 +63,7 @@ Each screen = one file `sitemap/screens/<id>.json` (each member owns their own �
 ## 7. TestNG suites & reporting
 
 - Suites in `configs/suites/*.xml`: `smoke.xml`/`regression.xml` (parallel) + `*-serial.xml` (serial — recommended, clean green report) + per-feature (`auth-regression.xml`). Adding a new feature → register the class in the matching suite.
-- **Each run = one directory** `results/reports/<ddMMMyyyy>/<runTs>/`: ExtentReports Spark HTML + `screenshots/` (pass & fail) + `traces/` + `videos/`. Each test embeds a screenshot of both states + **the URL at the end**. Do NOT write artifacts to top-level `results/`. End of run: push R2 + Lark card (enabled in `configs/lark.properties`/`cloudflare.properties`).
+- **Each run = one directory** `results/tests/<ddMMMyyyy>/<runTs>/`: ExtentReports Spark HTML + `screenshots/` (pass & fail) + `traces/` + `videos/`. Each test embeds a screenshot of both states + **the URL at the end**. Do NOT write artifacts to top-level `results/`. End of run: push R2/S3 + notify (enabled in `.claude/qa-claude/.env`).
 
 > Overall architecture: [design-pattern.md](design-pattern.md). Code rules: [coding-rules.md](coding-rules.md). Review checklist: [review-checklist.md](review-checklist.md).
 </content>

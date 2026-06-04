@@ -78,7 +78,7 @@ def main(argv=None):
     domain = env_str("CF_R2_DOMAIN")
     prefix = env_str("CF_R2_PREFIX")
     date_folder = report_file.parent.name
-    log_dir = Path(env_str("CF_LOG_DIR") or (project_root() / "reports" / "upload-logs"))
+    log_dir = Path(env_str("CF_LOG_DIR") or (project_root() / "results" / "tests" / ".upload-logs"))
     ulog = UploadLog(log_dir / f"{date_folder}.log")
 
     log("━" * 34)

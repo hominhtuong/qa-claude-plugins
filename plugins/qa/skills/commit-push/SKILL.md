@@ -11,7 +11,7 @@ Reusable capability: get clean changes onto origin safely. Runs **only after** `
 1. **Determine the branch**: `git branch --show-current`.
    - On the **default branch** (`main`/`master`) → **do NOT push directly**. Create a feature branch `feat/<slug>` (inferred from the diff, or ask for a name if unclear) → `git switch -c <branch>`.
    - Any other branch → keep it.
-2. **Stage**: `git add` the in-scope files; avoid adding junk/secret files (cross-check `.gitignore` — do not add `reports/`, tokens, `.properties` containing secrets).
+2. **Stage**: `git add` the in-scope files; avoid adding junk/secret files (cross-check `.gitignore` — do not add `results/tests/` run artifacts, `.claude/qa-claude/.env`, tokens, files containing secrets).
 3. **Commit message**: use the parameter if provided; empty → auto-generate a short Conventional Commit from the diff (e.g. `test(order): them smoke flow tao don`). End with the line:
    `Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>`
 4. **Push**: `git push -u origin <branch>`. Remote rejects (branch behind remote) → `git fetch` + notify the user, do **NOT** force-push.

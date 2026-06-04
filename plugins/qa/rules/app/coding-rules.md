@@ -99,7 +99,7 @@ Only report elements that do NOT use `id`. Skip elements that have an `id`.
 ## Reference templates (read before creating a new class)
 - **Screen**: `src/main/java/com/example/screens/auth/LoginScreen.java`
 - **Test**: `src/test/java/com/example/tests/auth/GoToHomeTest.java`
-- **HTML report**: `${CLAUDE_PLUGIN_ROOT}/rules/report-template.html` — replace `{{placeholder}}`, output `docs/<module>-testcase-report.html`.
+- **HTML report**: `${CLAUDE_PLUGIN_ROOT}/rules/report-template.html` — replace `{{placeholder}}`, output `results/<module>/<module>-testcase-report.html`.
 
 ## Before finishing
 - `mvn clean compile test-compile` must be **green** (skill `build-verify`). Red → fix via skill `fix-by-layer` until green.

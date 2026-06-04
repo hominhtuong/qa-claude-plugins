@@ -22,7 +22,7 @@ Run **skill `detect-platform`** (argument/auto-detect/ask) → one `platform`. D
 - **android | ios** → skill **`navigate-app`** (Appium MCP: device preflight + install + session + GoToHome → feature screen).
 
 ## Step 2 — Explore, hunt bugs & triage — skill `exploratory-method` (agnostic, core)
-The full bug-hunting method (try the main interactions + open item detail + validate boundaries, **read figures/messages carefully** to catch wrong numbers/negative numbers/leaked text/SQL exceptions exposed in the UI), **triage on the spot**, **screenshot evidence** → `reports/exploratory/<group>/screenshots/` named by BUG-ID (each `[APP-BUG]` ≥1 image + a few `-ok` images), quote the error verbatim — lives in **skill `exploratory-method`**. Elements that can't be anchored → record them in the bug report. Screenshot via MCP web = `browser_take_screenshot`, app = `appium_take_screenshot` (JPG, not to Desktop).
+The full bug-hunting method (try the main interactions + open item detail + validate boundaries, **read figures/messages carefully** to catch wrong numbers/negative numbers/leaked text/SQL exceptions exposed in the UI), **triage on the spot**, **screenshot evidence** → `results/exploratory/<group>/screenshots/` named by BUG-ID (each `[APP-BUG]` ≥1 image + a few `-ok` images), quote the error verbatim — lives in **skill `exploratory-method`**. Elements that can't be anchored → record them in the bug report. Screenshot via MCP web = `browser_take_screenshot`, app = `appium_take_screenshot` (JPG, not to Desktop).
 
 ## Step 2b — Cross-check against the design system (if a spec exists) — skill `design-conformance`
 Does the UI match the design system (color/typography/corner-radius/state tokens, touch target ≥48px). Deviation vs the design → `[APP-BUG]` *design deviation*. No component spec yet → `[NEEDS-TRIAGE]`, don't conclude. (Native apps make it hard to read color/font via element → check mainly via images.)
@@ -33,7 +33,7 @@ Does the UI match the design system (color/typography/corner-radius/state tokens
 Open the correct find-elements skill per platform: **web** `find-elements-web` · **android** `find-elements-android` · **ios** `find-elements-ios` (app: spawn agent `source-inspector`). Elements missing id/testid → **skill `missing-ids`** (RECORD). Declare Screen/Page Object via skill `declare-screen` (no-assert) → **skill `build-verify`** green → **skill `update-sitemap`**.
 
 ## Step 4 — Bug Report for dev (MAIN DELIVERABLE)
-Per `exploratory-method`: write `reports/exploratory/<group>/dev-bug-report-<ddMMMyyyy>.md` following the template (each bug: Screen · Verbatim symptom · Root cause if found · Impact · Expectation · Evidence · Defect ID) + a **✅ Checked — NO bug** section + **❓ NEEDS-TRIAGE** + environment notes. Append each `[APP-BUG]` to the register `reports/exploratory/bug-summary.md`.
+Per `exploratory-method`: write `results/exploratory/<group>/dev-bug-report-<ddMMMyyyy>.md` following the template (each bug: Screen · Verbatim symptom · Root cause if found · Impact · Expectation · Evidence · Defect ID) + a **✅ Checked — NO bug** section + **❓ NEEDS-TRIAGE** + environment notes. Append each `[APP-BUG]` to the register `results/exploratory/bug-summary.md`.
 
 ## Step 5 — GATE DECISION + finish
 - 🔴 **Has `[APP-BUG]`** → deliverable = bug report for dev. Do **NOT** `/qa:plan-tests`/`/qa:cook` for the broken part.

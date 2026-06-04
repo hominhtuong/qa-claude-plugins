@@ -76,7 +76,7 @@ def main(argv=None):
     prefix = env_str("S3_PREFIX")
     public_base = env_str("S3_PUBLIC_BASE").rstrip("/")
     date_folder = report_file.parent.name
-    log_dir = Path(env_str("S3_LOG_DIR") or (project_root() / "reports" / "upload-logs"))
+    log_dir = Path(env_str("S3_LOG_DIR") or (project_root() / "results" / "tests" / ".upload-logs"))
     ulog = UploadLog(log_dir / f"{date_folder}.s3.log")
 
     log("━" * 34)
