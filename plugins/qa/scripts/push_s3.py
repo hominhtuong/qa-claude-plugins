@@ -8,7 +8,7 @@ Uses the standard S3 endpoint + access-key/secret convention (works with AWS/CMC
 Requires the AWS CLI (`aws`). Install: macOS `brew install awscli` · Windows
 `winget install Amazon.AWSCLI` · Linux `sudo apt install awscli`. (doctor reports it.)
 
-Config from .claude/qa-claude/.env (see `setup` skill):
+Config from .claude/qa-claude/.plugin.env (see `setup` skill):
     ENABLE_S3_PUSH       true|false   (gate; false => no-op, exit 0)
     AWS_ACCESS_KEY_ID    access key                    (required)
     AWS_SECRET_ACCESS_KEY secret key                   (required)

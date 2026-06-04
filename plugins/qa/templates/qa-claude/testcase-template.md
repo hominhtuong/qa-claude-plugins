@@ -51,4 +51,4 @@
 - Steps must be reproducible by any QC without extra explanation.
 
 ## Upload destination (priority chain)
-Local `.xlsx` in `results/<feature>/` is always saved (hard backup). Then upload once (after merging phases) via: Lark Drive (`LARK_DRIVE_FOLDER_ID`) → Google Sheets (`GOOGLE_DRIVE_FOLDER_ID`) → local-only. Folder IDs come from `.claude/qa-claude/.env` (not committed).
+Local `.xlsx` in `results/<feature>/` is always saved (hard backup). Then upload once (after merging phases) via: Lark Drive (`LARK_DRIVE_FOLDER_ID`) → Google Sheets (`GOOGLE_DRIVE_FOLDER_ID`) → local-only. Folder IDs come from `.claude/qa-claude/.plugin.env` (not committed).

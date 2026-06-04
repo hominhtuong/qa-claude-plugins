@@ -17,7 +17,7 @@ Git conventions shared across every automation project. Skill `commit-push` enfo
 ## Push
 - `git push -u origin <branch>` — **no** `--force`.
 - Only commit/push **when the user requests it**.
-- Do not add junk/secret files: skip `results/tests/` run artifacts, `.claude/qa-claude/.env`, tokens, files containing secrets (cross-check `.gitignore`).
+- Do not add junk/secret files: skip `results/tests/` run artifacts, `.claude/qa-claude/.plugin.env`, tokens, files containing secrets (cross-check `.gitignore`).
 
 ## Gate before committing
 1. `review-audit` clean of Critical/Blocker.

@@ -40,7 +40,7 @@ File naming, multi-sheet, time estimation, and upload priority conventions for t
 
 ## 4. Upload Priority Chain
 
-The upload target is determined by config (`.env`), checked in order:
+The upload target is determined by config (`.plugin.env`), checked in order:
 
 ```
 1. LARK_DRIVE_FOLDER_ID != null => import to Lark Drive as an editable Lark Sheet

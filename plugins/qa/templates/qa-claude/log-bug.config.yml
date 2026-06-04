@@ -3,7 +3,7 @@
 # Installed by the `setup` skill at  <project>/.claude/qa-claude/log-bug.config.yml
 # ✅ This is YOUR copy — `setup` NEVER overwrites it. The latest schema is refreshed
 #    to `log-bug.config.example.yml` on each setup run (diff it after a plugin update).
-# Real SECRETS (Lark app id/secret, tokens) live in .claude/qa-claude/.env, never here —
+# Real SECRETS (Lark app id/secret, tokens) live in .claude/qa-claude/.plugin.env, never here —
 # this file holds only non-secret board ids + mappings. Read by `log-bug` / `update-board`.
 # ─────────────────────────────────────────────────────────────
 

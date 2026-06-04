@@ -3,3 +3,7 @@
 node_modules/
 .idea/
 .vscode/
+
+# Python bytecode
+__pycache__/
+*.pyc

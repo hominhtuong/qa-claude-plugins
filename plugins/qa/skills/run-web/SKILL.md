@@ -19,7 +19,7 @@ Reusable capability: run the suite safely — compile first, run the right targe
 5. **Triage every FAIL** ([failure-triage.md](../../rules/failure-triage.md)) — **before suggesting `/qa:fix`**: for each red test, classify the root cause as `[APP-BUG]` (app is wrong — report to dev, do NOT fix the test to make it green) vs `[FRAMEWORK]` (locator/automation wrong — `/qa:fix`) vs `[ENV]`/`[DATA]`. Cross-check the stack trace + screenshot + URL in the ExtentReport. **Summarize fails by label** (e.g. "3 fail: 1 [APP-BUG], 2 [FRAMEWORK]") so it's clear whether the "app is broken" or the "test is broken". Only `[FRAMEWORK]`/`[ENV]`/`[DATA]` fails warrant a `/qa:fix` suggestion; `[APP-BUG]` → list the defect to hand to dev.
 
 ## Final step — Upload report + Notify (optional, if enabled)
-Only runs when the project has a `.claude/qa-claude/.env` (created by the `setup` skill). Every flag defaults to `false` → silently skipped. The scripts read `.env` from the project, **cross-platform** (`python3` macOS/Linux, `python` Windows). Each group picks **at most 1** channel:
+Only runs when the project has a `.claude/qa-claude/.plugin.env` (created by the `setup` skill). Every flag defaults to `false` → silently skipped. The scripts read `.plugin.env` from the project, **cross-platform** (`python3` macOS/Linux, `python` Windows). Each group picks **at most 1** channel:
 
 1. **Upload report** (`<rpt>` = `results/tests/<ddMMMyyyy>/<runTs>/<report>.html`):
    - R2 (`ENABLE_CF_PUSH`): `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/push_report.py <rpt>`

@@ -4,8 +4,8 @@
 All plugin config lives in ONE folder, separate from the project's own ./.env:
 
     <project>/.claude/qa-claude/
-      .env                     # 🔒 secrets (Lark/R2/S3/notify) — ONE sectioned file.  SCAFFOLD (never overwritten)
-      .env.example             # reference for .env keys.                               OVERWRITE (refreshed on update)
+      .plugin.env              # 🔒 secrets (Lark/R2/S3/notify) — ONE sectioned file.  SCAFFOLD (never overwritten)
+      .plugin.env.example      # reference for .plugin.env keys.                        OVERWRITE (refreshed on update)
       log-bug.config.yml       # 🧩 board ids + dev-pic/field mappings (user-filled).   SCAFFOLD (never overwritten)
       log-bug.config.example.yml # reference for the config schema.                     OVERWRITE
       testcase-template.md     # 📄 test-case format (plugin-owned).                    OVERWRITE
@@ -26,10 +26,10 @@ import doctor
 from _env import project_root
 
 PLUGIN_ROOT = Path(__file__).resolve().parent.parent      # scripts/ -> plugin root
-ENV_TEMPLATE = PLUGIN_ROOT / "templates" / ".env.example"
+ENV_TEMPLATE = PLUGIN_ROOT / "templates" / ".plugin.env.example"
 MANAGED_SRC = PLUGIN_ROOT / "templates" / "qa-claude"     # testcase-template.md, log-bug.config.yml
 MANAGED_DIR = ".claude/qa-claude"
-GITIGNORE_LINES = [".claude/qa-claude/.env", ".qa-venv/", "results/tests/"]
+GITIGNORE_LINES = [".claude/qa-claude/.plugin.env", ".qa-venv/", "results/tests/"]
 
 
 def _copy(src: Path, dst: Path, overwrite: bool):
@@ -51,10 +51,18 @@ def install_managed(root: Path):
     dst_dir.mkdir(parents=True, exist_ok=True)
     print(f"[setup] {dst_dir}/")
 
-    # 1) secrets: .env (scaffold) + .env.example (overwrite reference)
+    # 0) migrate a pre-0.0.5 .env -> .plugin.env (keep the user's secrets, drop the old name)
+    legacy = dst_dir / ".env"
+    if legacy.is_file() and not (dst_dir / ".plugin.env").is_file():
+        legacy.rename(dst_dir / ".plugin.env")
+        print("[setup]   move   .env -> .plugin.env  (migrated your secrets to the new name)")
+    if (dst_dir / ".env.example").is_file():
+        (dst_dir / ".env.example").unlink()   # superseded by .plugin.env.example
+
+    # 1) secrets: .plugin.env (scaffold) + .plugin.env.example (overwrite reference)
     if ENV_TEMPLATE.is_file():
-        _copy(ENV_TEMPLATE, dst_dir / ".env.example", overwrite=True)
-        _copy(ENV_TEMPLATE, dst_dir / ".env", overwrite=False)
+        _copy(ENV_TEMPLATE, dst_dir / ".plugin.env.example", overwrite=True)
+        _copy(ENV_TEMPLATE, dst_dir / ".plugin.env", overwrite=False)
 
     # 2) log-bug config: .yml (scaffold) + .example.yml (overwrite reference)
     cfg = MANAGED_SRC / "log-bug.config.yml"
@@ -68,7 +76,7 @@ def install_managed(root: Path):
         if src.is_file():
             _copy(src, dst_dir / name, overwrite=True)
 
-    print("[setup] (edit .env + log-bug.config.yml — these are yours and never overwritten)")
+    print("[setup] (edit .plugin.env + log-bug.config.yml — these are yours and never overwritten)")
 
 
 def patch_gitignore(root: Path):
@@ -77,7 +85,7 @@ def patch_gitignore(root: Path):
     present = set(line.strip() for line in existing)
     to_add = [ln for ln in GITIGNORE_LINES if ln not in present]
     if not to_add:
-        print("[setup] .gitignore already covers the plugin's secret .env / caches")
+        print("[setup] .gitignore already covers the plugin's secret .plugin.env / caches")
         return
     block = (["", "# qa-claude plugin"] if existing else ["# qa-claude plugin"]) + to_add
     with gi.open("a", encoding="utf-8") as f:

@@ -1,9 +1,10 @@
-"""Shared .env loader for the `auto` plugin scripts (cross-platform, stdlib-only).
+"""Shared .plugin.env loader for the `qa` plugin scripts (cross-platform, stdlib-only).
 
-Secrets live in the project's .claude/qa-claude/.env (git-ignored), never in the plugin.
-This module finds that .env (walking up from cwd) and loads it into os.environ.
+Secrets live in the project's .claude/qa-claude/.plugin.env (git-ignored), never in the
+plugin. Named `.plugin.env` so it never collides with the project's own ./.env. This
+module finds that file (walking up from cwd) and loads it into os.environ.
 
-Key names follow a stable convention (see templates/.env.example):
+Key names follow a stable convention (see templates/.plugin.env.example):
     ENABLE_LARK_NOTIFY, LARK_WEBHOOK_URL, LARK_WEBHOOK_SECRET, LARK_PLATFORM, LARK_USER
     ENABLE_CF_PUSH, CF_ACCOUNT_ID, CF_API_TOKEN, CF_R2_BUCKET, CF_R2_DOMAIN, CF_R2_PREFIX
 """
@@ -19,10 +20,11 @@ def project_root() -> Path:
 
 
 def find_env_file() -> Path | None:
-    """Locate the plugin's .env (kept separate from the project's own ./.env).
+    """Locate the plugin's .plugin.env (kept separate from the project's own ./.env).
 
     Order: $QA_ENV_FILE → walking up from cwd (and $CLAUDE_PROJECT_DIR), preferring
-    `.claude/qa-claude/.env` over a bare `./.env` (the latter kept as a fallback).
+    `.claude/qa-claude/.plugin.env`, then the legacy `.claude/qa-claude/.env` (pre-0.0.5),
+    then a bare `./.env` (last-resort fallback).
     """
     override = os.environ.get("QA_ENV_FILE")
     if override:
@@ -34,23 +36,25 @@ def find_env_file() -> Path | None:
     if proj:
         roots = [Path(proj).resolve(), *roots]
     for d in roots:
-        for candidate in (d / ".claude" / "qa-claude" / ".env", d / ".env"):
+        for candidate in (d / ".claude" / "qa-claude" / ".plugin.env",
+                          d / ".claude" / "qa-claude" / ".env",
+                          d / ".env"):
             if candidate.is_file():
                 return candidate
     return None
 
 
 def load_env(verbose: bool = False) -> dict:
-    """Parse the project's .env into os.environ (without overriding real env vars).
+    """Parse the plugin's .plugin.env into os.environ (without overriding real env vars).
 
-    Returns the parsed key->value dict (may be empty if no .env). Supports `KEY=value`
+    Returns the parsed key->value dict (may be empty if none). Supports `KEY=value`
     and `KEY = value`, ignores blank lines and `#` comments, strips surrounding quotes.
     """
     parsed: dict = {}
     path = find_env_file()
     if path is None:
         if verbose:
-            print("[env] no .env found — run the `setup` skill to create one")
+            print("[env] no .plugin.env found — run the `setup` skill to create one")
         return parsed
     for raw in path.read_text(encoding="utf-8").splitlines():
         line = raw.strip()
