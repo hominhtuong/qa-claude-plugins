@@ -20,4 +20,4 @@ Reusable capability: from the currently open page (after the `navigate-web` skil
 4. **Choose `screenKeyLocator()`**: 1 element that always appears & is unique when the screen is shown (heading/marker app-shell), language-proof — prefer `data-testid` or role-heading.
 5. **Return**: a table `element (role) | chosen locator | raw attributes | missing testid?` for the Screen declaration step.
 
-> This skill only EXTRACTS + picks locators; writing them into Java fields is the `cook-web` skill. Capture evidence → `mcp__plugin_playwright_playwright__browser_take_screenshot`, saved to `.playwright-mcp/`, NOT to Desktop.
+> This skill only EXTRACTS + picks locators; writing them into Java fields is the `cook-web` skill. Capture evidence → `mcp__plugin_playwright_playwright__browser_take_screenshot` — **pass the full relative path as `filename`**: `sitemap/screenshots/<name>.png` (a bare file name falls back to the MCP output dir / project root), NOT to Desktop.

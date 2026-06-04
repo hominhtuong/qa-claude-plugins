@@ -19,7 +19,7 @@ Flutter/native apps → Appium sees a flat tree and **CANNOT read hex color / fo
    - status `done` → has a spec, can be checked.
    - status `pending` (not yet extracted) → do NOT conclude; attach `[NEEDS-TRIAGE]` + (optionally) add the spec per `<DESIGN_SYSTEM_DIR>/README.md` (needs the Figma URL/node-id; figma MCP only runs from the main agent).
 2. **Load the baseline**: `<DESIGN_SYSTEM_DIR>/tokens.json` (color/typography/shape/elevation) + `components/<type>.json` (variant, `conformanceChecklist`, `referenceScreenshot`).
-3. **Screenshot the app**: `mcp__appium__appium_take_screenshot` → JPG into `sitemap/screenshots/<name>.jpg` (NOT to Desktop, NOT PNG).
+3. **Screenshot the app**: `mcp__appium__appium_take_screenshot` → JPG, **pass the full relative path as the `filename`**: `sitemap/screenshots/<name>.jpg` (a bare file name falls back to the MCP output dir / project root; NOT to Desktop, NOT PNG).
 4. **Check** each `conformanceChecklist` item: background/text color vs token (brand primary/secondary taken from `tokens.json`), corner radius, font size against the typography scale, presence of a state-layer when pressed. Compare visually against `referenceScreenshot`.
 5. **Classify & record** each deviation (per failure-triage):
    - App renders wrong vs Figma → `[APP-BUG]` *design deviation* (with screenshot + expected token/spec + actual). Report to dev, do NOT patch the test to dodge it.
