@@ -22,27 +22,18 @@ Miễn phí & mở cho **tất cả mọi người**. Cài một lần, dùng ch
 
 ---
 
-## 2. Kiến trúc — 2 router (điểm cốt lõi)
+## 2. Kiến trúc — automation vs manual = command riêng + platform router
 
-Một command như `/cook` phục vụ **nhiều thế giới**: viết code automation (Web Playwright / App Appium iOS+Android) HOẶC sinh test case thủ công. Mỗi nhánh đọc/viết khác nhau. Nếu nhồi hết vào 1 skill → Claude đọc thừa → **tốn token, nhiễu**.
+Plugin phục vụ **2 thế giới**: viết code automation (Web Playwright / App Appium iOS+Android) và làm test case thủ công. Hai thế giới này dùng **command tên riêng, rõ nghĩa** (không nhập nhằng, không cần cờ):
 
-**Giải pháp**: skill **tách nhỏ**, command là **router** — Bước 0 chốt hướng đi, sau đó chỉ đọc **đúng 1 skill**.
+| Việc | Automation (viết/chạy code) | Manual (test case tài liệu) |
+|---|---|---|
+| Sinh | `/cook` (Page Object + test) | `/gen-testcases` (→ xlsx/Sheet) |
+| Plan | `/plan-tests` | `/plan-gen-testcases` |
+| Phân tích | `/analyze` (code/kết quả) | `/analyze-spec` (spec/PRD) |
+| Đếm | `/count-cases` (`@Test`) | `/count-testcases` (TC trong sheet) |
 
-### Router 1 — chế độ (`detect-mode`): automation ⟷ manual
-4 command "đa năng" (`cook`, `plan-tests`, `analyze`, `count-cases`) tự nhận diện:
-
-```
-/cook <plan|yêu cầu> [--auto|--manual]
-        │
-        ▼  Bước 0 — skill detect-mode (cờ? → repo có test framework? → nội dung? → hỏi)
-   ┌────┴───────────────────┐
-automation                manual
-(viết code test)          (sinh test case → xlsx/Sheet)
- → detect-platform         → gen-testcases / tc-template
-```
-
-### Router 2 — nền tảng (`detect-platform`): web / android / ios
-Nhánh automation chốt tiếp nền tảng → chỉ đọc 1 skill:
+**Platform router (`detect-platform`)** — nhánh automation chốt nền tảng → chỉ đọc **đúng 1 skill** (tiết kiệm token):
 
 | Việc | web | android | ios |
 |---|---|---|---|
@@ -52,7 +43,7 @@ Nhánh automation chốt tiếp nền tảng → chỉ đọc 1 skill:
 | Chạy suite | `run-web` | `run-app` | `run-app` |
 | Rule design/coding | `rules/web/*` | `rules/app/*` | `rules/app/*` |
 
-Bản đồ định tuyến đầy đủ: [`plugins/qa/rules/platform-detect.md`](plugins/qa/rules/platform-detect.md). Skill **agnostic** (đọc bất kể mode/platform): `detect-mode`, `detect-platform`, `exploratory-method`, `plan-method`, `fix-by-layer`, `review-audit`, `design-conformance`, `update-sitemap`.
+Bản đồ định tuyến đầy đủ: [`plugins/qa/rules/platform-detect.md`](plugins/qa/rules/platform-detect.md). Skill **agnostic**: `detect-platform`, `exploratory-method`, `plan-method`, `fix-by-layer`, `review-audit`, `design-conformance`, `update-sitemap`.
 
 ---
 
@@ -63,20 +54,23 @@ qa-claude-plugins/
 ├── .claude-plugin/marketplace.json          # catalog (1 plugin: qa)
 └── plugins/qa/                               # plugin DUY NHẤT — mọi command gọi trực tiếp
     ├── .claude-plugin/plugin.json
-    ├── commands/  cook · plan-tests · analyze · count-cases   (đa năng — tự rẽ mode)
-    │              exploratory · find-elements · run · fix · review-change ·
-    │              review-codebase · push-code · merge-request · kill-appium ·
-    │              log-bug · help · status · ask · missing-test-ids
-    ├── skills/    detect-mode · detect-platform │ find-elements-{web,android,ios} │
+    ├── commands/  AUTOMATION: cook · plan-tests · analyze · count-cases · exploratory ·
+    │              find-elements · run · fix · review-change · review-codebase ·
+    │              push-code · merge-request · kill-appium
+    │              MANUAL: gen-testcases · plan-gen-testcases · analyze-spec ·
+    │              count-testcases · log-bug · update-board
+    │              SHARED: help · status · ask · missing-test-ids
+    ├── skills/    detect-platform │ find-elements-{web,android,ios} │
     │              navigate-{web,app} │ cook-{web,app} │ run-{web,app} │
     │              exploratory-method · plan-method · fix-by-layer · review-audit ·
     │              design-conformance · declare-screen · update-sitemap │
-    │              gen-testcases · plan-testcases · tc-template · log-bug │
+    │              gen-testcases · plan-testcases · tc-template · log-bug · update-board │
     │              commit-push · build-verify · missing-ids · help-info │ setup · doctor
     ├── scripts/   setup · doctor · lark_notify · notify_webhook · push_report · push_s3 · _env · _upload  (python3, cross-platform)
-    ├── templates/ .env.example  (config Lark/R2/S3 — copy sang ./.env trong project)
+    ├── templates/ .env.example  +  qa-claude/{testcase-template.md, log-bug.config.yml}
+    │              → `setup` cài bản EDIT được vào project's .claude/qa-claude/ (ghi đè khi update)
     ├── rules/     platform-detect · failure-triage · exploratory-bug-report-template ·
-    │              lark-mcp-guide · git-conventions · test-quality · severity-priority · output-format │
+    │              lark-mcp-guide · git-conventions · test-quality · priority · output-format │
     │              web/{design-pattern,coding-rules,design-system,review-checklist} │
     │              app/{design-pattern,coding-rules,design-system,design-system-figma,review-checklist,troubleshooting}
     └── agents/    source-inspector · figma-reader · lark-reader
@@ -97,13 +91,13 @@ qa-claude-plugins/
 6. **`/fix <bug>`** — sửa **đúng layer**, không sửa test để né `[APP-BUG]`.
 7. **`/review-change`** · **`/review-codebase`** → **`/push-code`** → **`/merge-request`** (tự nhận GitHub `gh` / GitLab `glab` từ remote).
 
-### Manual QA (test case thủ công)
-`/analyze <spec>` → `/plan-tests <feature>` → `/cook <plan>` (sinh test case ra **Sheet/xlsx**, tiếng Việt có dấu, chuẩn `test-quality`) → `/log-bug <mô tả>` (Lark Bitable).
+### Manual QA (test case thủ công — command tên riêng)
+`/analyze-spec <spec>` → `/plan-gen-testcases <feature>` → `/gen-testcases <plan>` (sinh test case ra **Sheet/xlsx**, tiếng Việt có dấu, chuẩn `test-quality`) → `/log-bug <mô tả>` (Lark Bitable; chọn board bằng `/update-board`).
 
 ### Dùng chung
-`/help` · `/status` · `/ask` · `/missing-test-ids` · `/count-cases` · `/kill-appium`.
+`/help` · `/status` · `/ask` · `/missing-test-ids` · `/count-cases` · `/count-testcases` · `/kill-appium`.
 
-> **4 command đa năng** (`cook`, `plan-tests`, `analyze`, `count-cases`) **tự nhận diện** automation hay manual theo cờ `--auto`/`--manual`, loại repo, và nội dung yêu cầu. Nhập nhằng → nó hỏi 1 lần.
+> **Automation vs Manual = tên riêng**, không nhập nhằng: `/cook` (viết code) vs `/gen-testcases` (sinh TC); `/plan-tests` vs `/plan-gen-testcases`; `/analyze` vs `/analyze-spec`; `/count-cases` vs `/count-testcases`.
 
 ---
 
@@ -173,7 +167,7 @@ Lark: group → Settings → Bots → **Custom Bot** → copy webhook (+ secret 
 
 1. **1 plugin duy nhất (`qa`)** — mọi command gọi trực tiếp, không prefix. Đừng tạo plugin trùng tên command với nhau (sẽ buộc prefix lại).
 2. **`${CLAUDE_PLUGIN_ROOT}` là per-plugin** — file một command/skill *đọc* phải cùng plugin; gọi skill khác **theo tên** (vd `commit-push`, `gen-testcases`). **Không** dùng `.claude/rules|skills|agents/` trong file plugin.
-3. **Command đa năng** (`cook`/`plan-tests`/`analyze`/`count-cases`) luôn có **Bước 0 `detect-mode`** → 2 nhánh `# Mode: automation` / `# Mode: manual`. Nhánh automation có thêm **`detect-platform`** → chỉ đọc skill/rule đúng nền tảng (web `rules/web/*` · app `rules/app/*`).
+3. **Automation vs Manual = command tên riêng** (KHÔNG gộp/auto-detect): `cook`/`gen-testcases`, `plan-tests`/`plan-gen-testcases`, `analyze`/`analyze-spec`, `count-cases`/`count-testcases`. Command automation có **Bước 0 `detect-platform`** → chỉ đọc skill/rule đúng nền tảng (web `rules/web/*` · app `rules/app/*`). File user EDIT được (template TC, config log-bug board) đặt ở **project's `.claude/qa-claude/`** (do `setup` cài, ghi đè khi update); secret ở `./.env`.
 4. Command frontmatter giữ format (`description`, `argument-hint`, `allowed-tools`). Skill = thư mục `<name>/SKILL.md`, frontmatter `name` (== tên thư mục) + `description`. **Description bằng tiếng Anh** (AI trigger nhanh hơn); nội dung output tiếng Việt thì ghi rõ trong instruction.
 5. Sau khi sửa: `python3 -m json.tool` mọi JSON; `grep -rn '\.claude/\(rules\|skills\|agents\)/' plugins/` phải rỗng; tên skill tham chiếu phải tồn tại; tên skill `name:` == tên thư mục.
 

@@ -1,37 +1,39 @@
 ---
 name: log-bug
-description: Reusable logic to log a bug to a Lark Bitable board — gather required fields (Dev PIC, Sprint, Version, Feature), score Severity/Priority via severity-priority.md, read-only board guard (block create on a production view), daily multi-board confirmation, Python-first Lark API (do NOT print token). Board ID read from .env/config (placeholder), not hardcoded. Used by the log-bug command.
+description: Reusable logic to log a bug to a Lark Bitable board — read board ids + field/dev-pic/priority/option mappings from .claude/qa-claude/log-bug.config.yml, gather required fields (Dev PIC, Sprint, Version, Feature), set Priority only (no Severity; AI auto-estimates if omitted), read-only board guard, daily multi-board confirmation, create via the project's Lark Python helper or Lark MCP (never print token). Used by the log-bug command.
 ---
 
 # Skill: log-bug
 
-A reusable capability to **create a bug record** on Lark Bitable per the team template. Scoring rules: [severity-priority.md](../../rules/severity-priority.md).
+A reusable capability to **create a bug record** on Lark Bitable per the team config. Priority rules: [priority.md](../../rules/priority.md). **Severity is not used.**
 
-> **LANGUAGE — RULE #1**: Generate the Vietnamese content (Name, Steps, Actual, Expected) in Vietnamese (with diacritics). Steps must be clear and reproducible (same quality standard as test cases).
+> **LANGUAGE — RULE #1**: Generate the Vietnamese content (Name, Steps, Actual, Expected) in Vietnamese (with diacritics). Steps must be clear and reproducible (same bar as test cases).
 >
-> **CREATE ONLY — never modify/delete an existing record**.
+> **CREATE ONLY — never modify/delete an existing record. NEVER print a token/secret.**
 
 ## Procedure
 
-1. **Load config (placeholder, not hardcoded)**:
-   - The active board is read from `.env`/config: `LARK_BUG_BASE_ID`, `LARK_BUG_TABLE_ID` (+ `LARK_BUG_BASE_NAME` for display/confirm). If not set => ask the user for the Lark Bitable URL, extract the ID from the pattern `.../base/<BASE_ID>?table=<TABLE_ID>`. If the user pastes a board URL in the prompt => use it directly.
-   - Field cache (if the project has one): resolve Dev PIC / Sprint / Feature / Version from the cache FIRST; only call `list_fields` on a cache miss or when the data changes.
-2. **Read-only guard (CHECK BEFORE every create)**: the board is read-only if ANY source reports:
-   - `.env` flag `LARK_BUG_READ_ONLY` = `true`/`1`/`yes`.
-   - State file board (e.g. `.board-state.json`) key `read_only` = true.
-   - Board registry note marked `READ-ONLY` / production view.
-   => If read-only: **STOP, do NOT create**, tell the user (production board), instruct to swap to the STG board or temporarily bypass (`LARK_BUG_READ_ONLY=false`). Do NOT bypass on your own, do NOT change the board on your own.
-3. **Multi-board daily confirmation**: if the registry has >= 2 boards => at the start of each day, the FIRST bug must confirm with the user that it points to the correct board (compare `last_confirm_date`/`confirmed_alias` in the state file against today + the active board). Mismatch => show a confirmation, wait for the user. Only 1 board => skip. User pastes a new board URL in the prompt => skip confirmation that time.
-4. **Gather required fields** (ASK if missing from both the prompt and `.env` defaults):
-   - **Dev PIC** (lookup cache => open_id; no match => ask).
-   - **Sprint** (cache => `DEFAULT_SPRINT` from `.env` => ask). Skip per platform if applicable.
-   - **Version** (cache => `DEFAULT_VERSION` from `.env` => ask). Skip per platform if applicable.
-   - **Feature / Tính năng** (match cache; ambiguous => ask).
-   > Platform-based skip: Admin Portal doesn't attach Sprint/Version; Web doesn't attach Version (depends on the board schema — read the field list when unsure).
-5. **Auto-fill the remaining fields** (no need to ask): Name (`[Tính năng/màn hình] Mô tả bug`), Platform (detect from context, default `App`), Type (UI/UX vs Function vs Performance), Source/Status (per board schema, new bug = `New`).
-6. **Score Severity/Priority** per [severity-priority.md](../../rules/severity-priority.md): user provides => validate (large mismatch with evidence => ask to confirm); not provided => auto-estimate + write a short rationale. If the board has no Severity field => use Priority only.
-7. **Attachment** (if any): image/video => read & ANALYZE the content to understand the bug (which screen, steps, actual vs expected) before filling. User has a short description => prioritize the description, with media adding detail. Upload via the Lark helper (Python), get the `file_token`. Upload fails => create the bug without attachment, tell the user to add it manually.
-8. **Lark API — Python-first**: use the project's Python helper (e.g. `configs/lark_api.py`: `create_record`, `search_records`, `list_fields`, `update_record`) for ALL Bitable operations. Do NOT use `mcp__lark*` (often fails token expired). **NEVER print a token/secret** to output.
+1. **Load config** from `.claude/qa-claude/log-bug.config.yml` (generated by skill `setup`, edited by the user):
+   - `active_board` + `boards:` (each has `base_id`, `table_id`, `view_id`, `wiki_token`, `read_only`).
+   - `fields:` (logical name → board field name), `options:` (priority/type/platform/status_new), `dev_pic:` (name/alias → `ou_` open_id), `defaults:` (sprint/version/platform/test_account), `skip:` (platforms dropping sprint/version), `check_duplicate`.
+   - **Missing config** → tell the user to run skill `setup`; or if the user pasted a board URL, extract `base_id`/`table_id` from `.../base/<base_id>?table=<table_id>` and proceed.
+   - Secrets (Lark app id/secret, tokens) live in `./.env` / the project's Lark MCP — never in this file, never printed.
+2. **Read-only guard (BEFORE every create)**: read-only if the active board's `read_only: true`, OR `.env` `LARK_BUG_READ_ONLY` ∈ {true,1,yes}, OR a state file marks it. Read-only → **STOP, do NOT create**; tell the user to switch `active_board` (or `/update-board`) to a staging board, or bypass intentionally. Do NOT switch the board yourself.
+3. **Multi-board daily confirmation**: `boards:` has ≥ 2 entries → on the FIRST bug each day, confirm the active board with the user (compare a state file `last_confirm_date`/`confirmed_alias` against today + the active alias). 1 board → skip. User pasted a board URL → skip that time.
+4. **Gather required fields** (ASK if missing from prompt AND config `defaults`):
+   - **Dev PIC** → resolve via `dev_pic:` map to an open_id; no match → ASK.
+   - **Sprint** → prompt → `defaults.sprint` → ASK. Skip if platform ∈ `skip.no_sprint`.
+   - **Version** → prompt → `defaults.version` → ASK. Skip if platform ∈ `skip.no_version`.
+   - **Feature / Tính năng** → from prompt/context; ambiguous → ASK.
+5. **Auto-fill** (no asking): Name = `[Feature/screen] short bug description`; Platform = detect (default `defaults.platform`); Type = UI/UX vs Function vs Performance; Status field = `options.status_new` (new bug).
+6. **Priority** ([priority.md](../../rules/priority.md)) — **Priority ONLY, no Severity**:
+   - User provided → validate; big mismatch vs evidence → ask to confirm. Do not override silently.
+   - User omitted → **auto-estimate** from the evidence + write a one-line rationale. Do NOT ask just for priority.
+   - Normalize to an option in `options.priority`.
+7. **Attachment** (if any): image/video → read & ANALYZE the content (which screen, steps, actual vs expected) before filling. Short user description → it is the primary intent; media adds detail. Upload via Lark (helper or MCP), get the file token. Upload fails → create without attachment, tell the user to add it manually.
+8. **Create the record**:
+   - Prefer the project's Python Lark helper if present (e.g. `configs/lark_api.py`: `create_record`, `search_records`, `list_fields`). Otherwise use the **Lark MCP** bitable create-record tool (see [lark-mcp-guide.md](../../rules/lark-mcp-guide.md)).
+   - Map each value to the board field name from `fields:` and the option text from `options:`; Dev PIC → open_id(s).
 9. **Body template** for the `Input data / Action` field:
    ```
    Preconditions (nếu có):
@@ -42,8 +44,9 @@ A reusable capability to **create a bug record** on Lark Bitable per the team te
    - ...
    Notes (nếu có):
    - ...
+   Account test: <defaults.test_account or from prompt, if any>
    ```
    `Expected result` field: `Expected:` + content.
-10. **Create + return link**: full info => create directly (run a duplicate-check first if the project enables it); missing required fields => show a draft + ask. After create => build a direct link to the record from config (`get_lark_record_url`/base URL). Multiple bugs in one prompt => create sequentially, return a summary table.
+10. **Create + return link**: full info → create directly (duplicate-check first if `check_duplicate: true`); missing required → show a draft + ask. After create → build a direct record link from `boards.<active>` (`wiki_token`/`base_id` + `table_id` + `view_id` + `record_id`). Multiple bugs in one prompt → create sequentially, return a summary table.
 
-> This skill creates the bug record. Detailed scoring => rule `severity-priority.md`.
+> If the live board fields differ from the config → read the field list, adapt for this run, and suggest the user update `.claude/qa-claude/log-bug.config.yml` (or run `/update-board`).

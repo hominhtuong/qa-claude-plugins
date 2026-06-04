@@ -13,7 +13,8 @@ Prepare a project to use this plugin's optional integrations (Lark notifier + R2
    - Windows: `python ${CLAUDE_PLUGIN_ROOT}/scripts/setup.py`
 
    The script will:
-   - create `./.env` from `${CLAUDE_PLUGIN_ROOT}/templates/.env.example` (does NOT overwrite if it already exists);
+   - create `./.env` from `${CLAUDE_PLUGIN_ROOT}/templates/.env.example` (does NOT overwrite — it holds secrets);
+   - install editable resources into `./.claude/qa-claude/` (testcase-template.md, log-bug.config.yml, ...) — **ALWAYS overwritten** so a plugin update refreshes them; edit them to customize, re-run `setup --update` after updating the plugin;
    - add `.env`, `.qa-venv/`, `reports/upload-logs/` to the project's `.gitignore`;
    - run **doctor** and **auto-install `wrangler`** if the machine has `npm` (`--no-fix` to only report, not install).
 
