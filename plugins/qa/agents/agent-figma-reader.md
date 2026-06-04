@@ -32,8 +32,8 @@ Technical terms may remain in English (API, token, button, input, header, etc.).
 
 When invoked, you will receive:
 - `figma_link`: Figma design URL
-- `output_file`: Path to write the design summary (e.g., `results/exploratory/<group>/spec/figma-summary.md`)
-- `tracking_file`: Path to the screen-status tracking file (e.g., `results/exploratory/<group>/spec/figma-tracking.md`). If omitted, derive it next to `output_file` as `figma-tracking.md`.
+- `output_file`: Path to write the design summary (e.g., `results/<feature-name>/figma-tracking/figma-summary.md`)
+- `tracking_file`: Path to the screen-status tracking file (e.g., `results/<feature-name>/figma-tracking/figma-tracking.md`). If omitted, derive it next to `output_file` as `figma-tracking.md`.
 - `doc_index`: Index number of this document (e.g., 1, 2, 3...)
 - `max_screens`: Maximum screens to read per invocation (default: 7)
 - `batch`: Batch number (default: 1) — set when multiple Figma agents run in parallel over one file; each batch reads a distinct slice of screens.

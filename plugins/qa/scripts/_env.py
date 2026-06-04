@@ -11,7 +11,25 @@ Key names follow a stable convention (see templates/.plugin.env.example):
 from __future__ import annotations  # allow `Path | None` on Python 3.8/3.9
 
 import os
+import sys
 from pathlib import Path
+
+
+def ensure_utf8_io() -> None:
+    """Force UTF-8 on stdout/stderr so emoji + Vietnamese diacritics never crash the run.
+
+    On a legacy Windows console (cp1252) `print()` of non-ASCII raises UnicodeEncodeError,
+    which would abort scripts whose stdout is a contract (e.g. lark_read.py's JSON). Safe +
+    idempotent on macOS/Linux. Runs once at import so every plugin script is covered.
+    """
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8", errors="replace")  # Python 3.7+
+        except Exception:  # noqa: BLE001 — older Python / non-reconfigurable stream
+            pass
+
+
+ensure_utf8_io()
 
 
 def project_root() -> Path:

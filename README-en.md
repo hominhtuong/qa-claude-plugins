@@ -110,9 +110,9 @@ All output is gathered under the **`results/`** folder in the project:
 
 | Type | Location |
 |---|---|
-| Exploratory (bug report + screenshots) | `results/exploratory/<feature>/` |
+| Exploratory (spec analysis + figma-tracking + bug report + screenshots) | `results/<feature-name>/` (shared register: `results/bug-summary.md`) |
 | Each test run (HTML report + screenshots/videos) | `results/tests/<ddMMMyyyy>/…` |
-| Test cases (xlsx) + analysis + html testcase report | `results/<feature>/` |
+| Test cases (xlsx) + analysis + html testcase report | `results/<feature-name>/` |
 
 `results/tests/` (per-run artifacts) is automatically added to `.gitignore` when you run `setup`.
 

@@ -18,7 +18,7 @@ Goal: create a **solid plan (.md file)** describing how to implement the tests. 
 Run **skill `detect-platform`** → one `platform`. It decides which design-pattern rules to read in Step 2.
 
 ## Step 1 — EXPLORATORY GATE (before anything)
-1. Is there a recent bug report yet? `results/exploratory/<group>/dev-bug-report-*.md` + `bug-summary.md`. None/stale/changed → run **`/qa:exploratory <feature-name> <platform>`**.
+1. Is there a recent bug report yet? `results/<feature-name>/dev-bug-report-*.md` + the register `results/bug-summary.md`. None/stale/changed → run **`/qa:exploratory <feature-name> <platform>`**.
 2. Read the result:
    - 🔴 **Has `[APP-BUG]`** → **STOP planning** for that part; print "Feature NOT complete — N app bugs, see `dev-bug-report-*.md`". Do NOT create `plans/<feature>/plan.md`.
    - 🟢 **No `[APP-BUG]`** → app correct → continue to Step 2. Elements extracted during exploratory are used for Layer 1/2.

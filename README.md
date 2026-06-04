@@ -110,9 +110,9 @@ Mọi output gom về thư mục **`results/`** trong project:
 
 | Loại | Vị trí |
 |---|---|
-| Exploratory (bug report + screenshot) | `results/exploratory/<feature>/` |
+| Exploratory (phân tích spec + figma-tracking + bug report + screenshot) | `results/<feature-name>/` (register chung: `results/bug-summary.md`) |
 | Mỗi lần chạy test (HTML report + screenshot/video) | `results/tests/<ddMMMyyyy>/…` |
-| Test case (xlsx) + analysis + html testcase report | `results/<feature>/` |
+| Test case (xlsx) + analysis + html testcase report | `results/<feature-name>/` |
 
 `results/tests/` (artifact mỗi lần chạy) được tự thêm vào `.gitignore` khi chạy `setup`.
 

@@ -28,7 +28,7 @@ You are a Lark Document Reader Agent. Your job is to read ONE Lark document and 
 
 You will receive:
 - `url`: A Lark wiki/docx URL (e.g. `https://<org>.larksuite.com/wiki/<token>`)
-- `output_file`: Path to write the result (e.g. `results/exploratory/<group>/spec/spec-summary.md`)
+- `output_file`: Path to write the result (e.g. `results/<feature-name>/docs-summary.md`) — the Write tool auto-creates the parent folder
 - `doc_index`: Index number of this document (1, 2, 3…)
 - `read_linked`: Whether to read linked wiki documents found in content (default: `true`)
 - `max_linked_docs`: Max number of linked wiki docs to read (default: `3`)
