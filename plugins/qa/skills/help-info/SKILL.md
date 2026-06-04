@@ -31,6 +31,6 @@ Take the platform from the argument (`web|android|ios`), else auto-detect (playw
 `/analyze-spec <spec>` → `/plan-gen-testcases <feature>` → `/gen-testcases <plan>` (test cases into Sheet/xlsx) → `/log-bug <description>` (set the board with `/update-board`).
 
 ## Shared / utility commands
-`/help` (this overview) · `/status` · `/ask` · `/missing-test-ids` · `/count-cases` · `/count-testcases` · `/kill-appium`. Integrations setup: skills `setup`/`doctor` — scaffold `./.env` + editable resources in `./.claude/qa-claude/` (testcase template, log-bug board config), plus optional Lark/Slack/Teams/Telegram notify + Cloudflare R2 / S3 report upload.
+`/help` (this overview) · `/status` · `/ask` · `/missing-test-ids` · `/count-cases` · `/count-testcases` · `/kill-appium`. Integrations setup: skills `setup`/`doctor` — scaffold `.claude/qa-claude/.env` + editable resources in `./.claude/qa-claude/` (testcase template, log-bug board config), plus optional Lark/Slack/Teams/Telegram notify + Cloudflare R2 / S3 report upload.
 
 > Project override: a project's **local** `.claude/commands/<name>.md` (if same name) beats the plugin's bare command → projects can override without editing the plugin. Install / update: `/plugin marketplace update qa-claude` → `/reload-plugins`.

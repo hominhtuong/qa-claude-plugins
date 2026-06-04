@@ -17,6 +17,6 @@ Run **skill `update-board`**. It edits `.claude/qa-claude/log-bug.config.yml` (c
 4. **Refresh mappings** (optional, ask): read the live board fields (project Lark helper `list_fields`, or Lark MCP `bitable...appTableField_list`) → update `fields:` (field names), `options:` (priority/type/platform/status), and resolve any new `dev_pic:` open_ids the user names. Write back to the config.
 
 ## Rules
-- Only edit `.claude/qa-claude/log-bug.config.yml` — do not touch `./.env` secrets.
+- Only edit `.claude/qa-claude/log-bug.config.yml` — do not touch `.claude/qa-claude/.env` secrets.
 - Confirm before overwriting an existing board entry. Print the resulting active board + a 3-line summary.
 - After switching, remind the user that `/log-bug` will write to the new active board (and respects its `read_only`).

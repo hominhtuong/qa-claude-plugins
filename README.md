@@ -127,9 +127,18 @@ Hoặc commit vào project (ai clone cũng được hỏi cài) — `.claude/set
 
 > **Mặc định: không cần cấu hình gì.** Report luôn được sinh **trong local project** (`reports/…` cho app · `results/reports/…` cho web). Thông báo (Lark/Slack/…) và upload report (R2/S3) là **tính năng độc lập, bật-tắt riêng**. Không bật → `/run` vẫn chạy bình thường, bỏ qua êm.
 
-**Mỗi user dùng tài khoản của CHÍNH MÌNH** — toàn bộ webhook/secret/key do user tự điền vào `./.env` của project (git-ignored). Plugin **không chứa** và **không dùng chung** account của ai.
+**Mỗi user dùng tài khoản của CHÍNH MÌNH** — webhook/secret/key tự điền vào `.claude/qa-claude/.env` (git-ignored). Plugin **không chứa** và **không dùng chung** account của ai.
 
-### Cài 1 lần / project (tạo `.env` + check toolchain)
+### Config plugin gom 1 chỗ — `.claude/qa-claude/` (tách khỏi `./.env` của project)
+
+Toàn bộ config plugin nằm trong `<project>/.claude/qa-claude/`, **không đụng `./.env` riêng của app**. `setup` phân biệt rõ "của bạn" (không đè) vs "plugin sở hữu" (đè khi update):
+
+| File | Vai trò | Khi `setup` chạy lại |
+|---|---|---|
+| `.env` | 🔒 secret (1 file chia section: Lark/R2/S3/notify) | **KHÔNG đè** (giữ của bạn) |
+| `log-bug.config.yml` | 🧩 board id + mapping dev_pic/field | **KHÔNG đè** (giữ của bạn) |
+| `.env.example` · `log-bug.config.example.yml` | bản tham chiếu schema mới nhất | **đè** (diff sau khi update) |
+| `testcase-template.md` | 📄 format test case (plugin sở hữu) | **đè** |
 
 Chạy skill `setup` (hoặc bảo Claude *"chạy skill setup"*):
 
@@ -140,7 +149,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/setup.py
 python  %CLAUDE_PLUGIN_ROOT%\scripts\setup.py
 ```
 
-Script tự: tạo `./.env` từ template · vá `.gitignore` · chạy **doctor** (in lệnh cài thiếu theo OS, tự cài `wrangler` nếu có npm). Sau đó mở `./.env` bật tính năng cần dùng.
+Script tự: cài `.claude/qa-claude/` (bảng trên) · vá `.gitignore` · chạy **doctor**. Sau đó mở `.claude/qa-claude/.env` (bật tính năng) + `log-bug.config.yml` (board) để điền.
 
 ### Phương án (mỗi nhóm chọn tối đa 1 kênh)
 
@@ -152,7 +161,7 @@ Script tự: tạo `./.env` từ template · vá `.gitignore` · chạy **doctor
 
 Lark: group → Settings → Bots → **Custom Bot** → copy webhook (+ secret nếu bật sign). Generic webhook: `NOTIFY_PROVIDER=slack\|discord\|teams\|generic` + `NOTIFY_WEBHOOK_URL`, hoặc `telegram` + `NOTIFY_TELEGRAM_TOKEN`/`NOTIFY_TELEGRAM_CHAT_ID`. R2: token Cloudflare → My Profile → API Tokens → **R2 Token** (Edit). S3: để trống `S3_ENDPOINT` cho AWS thật, điền endpoint cho CMC/MinIO. Chọn kênh nào điền cụm key đó; kênh không dùng để `ENABLE_*=false`.
 
-> **Secret sống trong project** (`./.env`, git-ignored) — TUYỆT ĐỐI không vào repo plugin. Script là python3 thuần (Lark) + `wrangler`/`aws` cho upload; không cần pip.
+> **Secret sống trong project** (`.claude/qa-claude/.env`, git-ignored) — TUYỆT ĐỐI không vào repo plugin, không đụng `./.env` của app. Script là python3 thuần (Lark) + `wrangler`/`aws` cho upload; không cần pip.
 
 ---
 

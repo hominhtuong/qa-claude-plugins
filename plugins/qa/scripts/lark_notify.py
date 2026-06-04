@@ -4,7 +4,7 @@
 Cross-platform (Windows/macOS/Linux), stdlib-only — no pip install needed.
 Ported 1:1 from F2WebAutomation `LarkNotifier.java` (HMAC-SHA256 sign + lark_md card).
 
-Config is read from the PROJECT's ./.env (see `setup` skill):
+Config is read from .claude/qa-claude/.env (see `setup` skill):
     ENABLE_LARK_NOTIFY   true|false   (gate; false => no-op, exit 0)
     LARK_WEBHOOK_URL     https://open.larksuite.com/open-apis/bot/v2/hook/xxxx
     LARK_WEBHOOK_SECRET  sign secret (optional; enables HMAC sign)

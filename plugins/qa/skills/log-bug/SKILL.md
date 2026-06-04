@@ -17,7 +17,7 @@ A reusable capability to **create a bug record** on Lark Bitable per the team co
    - `active_board` + `boards:` (each has `base_id`, `table_id`, `view_id`, `wiki_token`, `read_only`).
    - `fields:` (logical name → board field name), `options:` (priority/type/platform/status_new), `dev_pic:` (name/alias → `ou_` open_id), `defaults:` (sprint/version/platform/test_account), `skip:` (platforms dropping sprint/version), `check_duplicate`.
    - **Missing config** → tell the user to run skill `setup`; or if the user pasted a board URL, extract `base_id`/`table_id` from `.../base/<base_id>?table=<table_id>` and proceed.
-   - Secrets (Lark app id/secret, tokens) live in `./.env` / the project's Lark MCP — never in this file, never printed.
+   - Secrets (Lark app id/secret, tokens) live in `.claude/qa-claude/.env` / the project's Lark MCP — never in this file, never printed.
 2. **Read-only guard (BEFORE every create)**: read-only if the active board's `read_only: true`, OR `.env` `LARK_BUG_READ_ONLY` ∈ {true,1,yes}, OR a state file marks it. Read-only → **STOP, do NOT create**; tell the user to switch `active_board` (or `/update-board`) to a staging board, or bypass intentionally. Do NOT switch the board yourself.
 3. **Multi-board daily confirmation**: `boards:` has ≥ 2 entries → on the FIRST bug each day, confirm the active board with the user (compare a state file `last_confirm_date`/`confirmed_alias` against today + the active alias). 1 board → skip. User pasted a board URL → skip that time.
 4. **Gather required fields** (ASK if missing from prompt AND config `defaults`):

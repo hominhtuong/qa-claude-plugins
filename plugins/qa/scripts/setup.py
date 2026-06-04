@@ -1,17 +1,21 @@
 #!/usr/bin/env python3
 """One-shot project setup for the qa plugin — cross-platform (Windows/macOS/Linux).
 
-Does NOT put any secret in the plugin. It:
-  1. Scaffolds ./.env in the PROJECT from templates/.env.example (NEVER overwrites — holds secrets).
-  2. Installs editable resources into ./.claude/qa-claude/ from templates/qa-claude/
-     (testcase-template.md, log-bug.config.yml, ...). These are plugin-MANAGED:
-     re-running setup (or `--update`) OVERWRITES them so a plugin update refreshes them.
-  3. Patches the project's .gitignore so .env / upload-logs are never committed.
-  4. Runs the toolchain doctor (with --fix to auto-install wrangler when npm is present).
+All plugin config lives in ONE folder, separate from the project's own ./.env:
+
+    <project>/.claude/qa-claude/
+      .env                     # 🔒 secrets (Lark/R2/S3/notify) — ONE sectioned file.  SCAFFOLD (never overwritten)
+      .env.example             # reference for .env keys.                               OVERWRITE (refreshed on update)
+      log-bug.config.yml       # 🧩 board ids + dev-pic/field mappings (user-filled).   SCAFFOLD (never overwritten)
+      log-bug.config.example.yml # reference for the config schema.                     OVERWRITE
+      testcase-template.md     # 📄 test-case format (plugin-owned).                    OVERWRITE
+
+SCAFFOLD = create only if missing (protects your secrets / board config).
+OVERWRITE = always refreshed from the plugin (so an update brings the latest schema/format).
 
 Usage:
-    python3 setup.py            # scaffold .env (if missing) + (re)install .claude/qa-claude + doctor
-    python3 setup.py --update   # same; explicit alias — re-installs managed resources
+    python3 setup.py            # scaffold + refresh .claude/qa-claude + doctor (auto-install wrangler)
+    python3 setup.py --update   # alias — same behaviour (refresh the OVERWRITE files)
     python3 setup.py --no-fix   # skip wrangler auto-install, report only
 """
 import shutil
@@ -21,47 +25,50 @@ from pathlib import Path
 import doctor
 from _env import project_root
 
-PLUGIN_ROOT = Path(__file__).resolve().parent.parent  # scripts/ -> plugin root
+PLUGIN_ROOT = Path(__file__).resolve().parent.parent      # scripts/ -> plugin root
 ENV_TEMPLATE = PLUGIN_ROOT / "templates" / ".env.example"
-MANAGED_SRC = PLUGIN_ROOT / "templates" / "qa-claude"   # editable resources to install
-MANAGED_DIR = ".claude/qa-claude"                       # destination inside the project
-GITIGNORE_LINES = [".env", ".qa-venv/", "reports/upload-logs/"]
+MANAGED_SRC = PLUGIN_ROOT / "templates" / "qa-claude"     # testcase-template.md, log-bug.config.yml
+MANAGED_DIR = ".claude/qa-claude"
+GITIGNORE_LINES = [".claude/qa-claude/.env", ".qa-venv/", "reports/upload-logs/"]
 
 
-def scaffold_env(root: Path):
-    """Create ./.env from the template if missing. NEVER overwrite (it holds secrets)."""
-    dst = root / ".env"
-    if dst.exists():
-        print(f"[setup] .env already exists at {dst} — left untouched (secrets)")
+def _copy(src: Path, dst: Path, overwrite: bool):
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    if dst.exists() and not overwrite:
+        print(f"[setup]   keep   {dst.name}  (already exists — left untouched)")
         return
-    if not ENV_TEMPLATE.is_file():
-        print(f"[setup] WARN: env template not found: {ENV_TEMPLATE}")
-        return
-    dst.write_text(ENV_TEMPLATE.read_text(encoding="utf-8"), encoding="utf-8")
-    print(f"[setup] created {dst} — fill in real values (Lark/R2/S3...)")
+    shutil.copyfile(src, dst)
+    print(f"[setup]   {'write ' if overwrite else 'create'} {dst.name}")
 
 
 def install_managed(root: Path):
-    """Copy templates/qa-claude/* into <project>/.claude/qa-claude/ — ALWAYS OVERWRITE.
+    """Install all plugin config into <project>/.claude/qa-claude/.
 
-    These are plugin-managed defaults the user can tweak between updates; a plugin
-    update + re-run refreshes them. The destination folder name (.claude/qa-claude)
-    signals it is overwrite-managed.
+    For each user-config file: refresh a `<name>.example` (OVERWRITE) + scaffold the
+    real file (SCAFFOLD). Pure templates are OVERWRITE.
     """
-    if not MANAGED_SRC.is_dir():
-        print(f"[setup] no managed resources at {MANAGED_SRC} — skip")
-        return
     dst_dir = root / MANAGED_DIR
     dst_dir.mkdir(parents=True, exist_ok=True)
-    count = 0
-    for src in sorted(MANAGED_SRC.rglob("*")):
+    print(f"[setup] {dst_dir}/")
+
+    # 1) secrets: .env (scaffold) + .env.example (overwrite reference)
+    if ENV_TEMPLATE.is_file():
+        _copy(ENV_TEMPLATE, dst_dir / ".env.example", overwrite=True)
+        _copy(ENV_TEMPLATE, dst_dir / ".env", overwrite=False)
+
+    # 2) log-bug config: .yml (scaffold) + .example.yml (overwrite reference)
+    cfg = MANAGED_SRC / "log-bug.config.yml"
+    if cfg.is_file():
+        _copy(cfg, dst_dir / "log-bug.config.example.yml", overwrite=True)
+        _copy(cfg, dst_dir / "log-bug.config.yml", overwrite=False)
+
+    # 3) pure plugin-owned templates: always overwrite
+    for name in ("testcase-template.md",):
+        src = MANAGED_SRC / name
         if src.is_file():
-            rel = src.relative_to(MANAGED_SRC)
-            dst = dst_dir / rel
-            dst.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copyfile(src, dst)   # overwrite
-            count += 1
-    print(f"[setup] installed {count} file(s) into {dst_dir}/ (overwritten — edit to customize)")
+            _copy(src, dst_dir / name, overwrite=True)
+
+    print("[setup] (edit .env + log-bug.config.yml — these are yours and never overwritten)")
 
 
 def patch_gitignore(root: Path):
@@ -70,7 +77,7 @@ def patch_gitignore(root: Path):
     present = set(line.strip() for line in existing)
     to_add = [ln for ln in GITIGNORE_LINES if ln not in present]
     if not to_add:
-        print("[setup] .gitignore already covers .env / upload-logs")
+        print("[setup] .gitignore already covers the plugin's secret .env / caches")
         return
     block = (["", "# qa-claude plugin"] if existing else ["# qa-claude plugin"]) + to_add
     with gi.open("a", encoding="utf-8") as f:
@@ -82,7 +89,6 @@ def main(argv=None):
     argv = sys.argv[1:] if argv is None else argv
     root = project_root()
     print(f"== qa-plugin setup (project: {root}) ==")
-    scaffold_env(root)
     install_managed(root)
     patch_gitignore(root)
     print()

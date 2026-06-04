@@ -1,6 +1,6 @@
 """Shared .env loader for the `auto` plugin scripts (cross-platform, stdlib-only).
 
-Secrets live in the PROJECT (./.env, git-ignored), never in the plugin.
+Secrets live in the project's .claude/qa-claude/.env (git-ignored), never in the plugin.
 This module finds that .env (walking up from cwd) and loads it into os.environ.
 
 Key names follow a stable convention (see templates/.env.example):
@@ -19,16 +19,24 @@ def project_root() -> Path:
 
 
 def find_env_file() -> Path | None:
-    """Locate the project's .env. Order: $QA_ENV_FILE, then .env walking up from cwd."""
+    """Locate the plugin's .env (kept separate from the project's own ./.env).
+
+    Order: $QA_ENV_FILE → walking up from cwd (and $CLAUDE_PROJECT_DIR), preferring
+    `.claude/qa-claude/.env` over a bare `./.env` (the latter kept as a fallback).
+    """
     override = os.environ.get("QA_ENV_FILE")
     if override:
         p = Path(override)
         return p if p.is_file() else None
     here = Path(os.getcwd()).resolve()
-    for d in [here, *here.parents]:
-        candidate = d / ".env"
-        if candidate.is_file():
-            return candidate
+    roots = [here, *here.parents]
+    proj = os.environ.get("CLAUDE_PROJECT_DIR")
+    if proj:
+        roots = [Path(proj).resolve(), *roots]
+    for d in roots:
+        for candidate in (d / ".claude" / "qa-claude" / ".env", d / ".env"):
+            if candidate.is_file():
+                return candidate
     return None
 
 

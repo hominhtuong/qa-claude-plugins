@@ -25,6 +25,6 @@ Edit the bug board registry so `/log-bug` writes to the right place. Target file
 5. **Write back** the YAML (preserve comments/structure where possible) and print: the new `active_board`, its `read_only` state, and a 3-line summary of what changed.
 
 ## Rules
-- Edit ONLY `.claude/qa-claude/log-bug.config.yml`. Never touch `./.env` secrets, never print tokens.
-- This file is plugin-managed (overwritten by `setup`) — remind the user to keep their board edits if they re-run `setup`.
+- Edit ONLY `.claude/qa-claude/log-bug.config.yml`. Never touch `.claude/qa-claude/.env` secrets, never print tokens.
+- This file is the user's own copy — `setup` does NOT overwrite it (only the `.example.yml` reference is refreshed).
 - After a switch, note that `/log-bug` now targets the new board and enforces its `read_only` guard.

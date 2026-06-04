@@ -7,7 +7,7 @@ with a per-date upload log + dedup. Shares file-collection/log with push_s3.py v
 Requires the `wrangler` CLI (auto-installed by the `setup`/`doctor` skill:
 `npm install -g wrangler`). Falls back to `npx wrangler` if not on PATH.
 
-Config from the PROJECT's ./.env (see `setup` skill):
+Config from .claude/qa-claude/.env (see `setup` skill):
     ENABLE_CF_PUSH   true|false   (gate; false => no-op, exit 0)
     CF_ACCOUNT_ID    Cloudflare account id        (required)
     CF_API_TOKEN     R2-edit API token            (required)

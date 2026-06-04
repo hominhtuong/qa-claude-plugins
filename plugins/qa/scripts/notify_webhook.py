@@ -4,7 +4,7 @@
 Alternative to lark_notify.py for teams not on Lark. Cross-platform, stdlib-only.
 Builds one plain-text summary and shapes the payload per provider.
 
-Config from the PROJECT's ./.env (see `setup` skill):
+Config from .claude/qa-claude/.env (see `setup` skill):
     ENABLE_NOTIFY_WEBHOOK   true|false   (gate; false => no-op, exit 0)
     NOTIFY_PROVIDER         slack|discord|teams|telegram|generic   (default slack)
     NOTIFY_WEBHOOK_URL      incoming webhook url (slack/discord/teams/generic)

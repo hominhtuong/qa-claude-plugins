@@ -23,7 +23,7 @@ Run **skill `detect-platform`**: argument `web|android|ios|all` → use it direc
 
 ## Step 3 — Push report + Lark notify (automatic, if enabled)
 
-The platform skill handles the **final step**: if the project has `./.env` with `ENABLE_CF_PUSH=true` → push the report to Cloudflare R2 (`scripts/push_report.py`); `ENABLE_LARK_NOTIFY=true` → send a result card to Lark (`scripts/lark_notify.py`). Flags off → skip silently. Project has no `.env` yet → run skill `setup` once (cross-platform Win/Mac, auto-installs `wrangler`).
+The platform skill handles the **final step**: if the project has `.claude/qa-claude/.env` with `ENABLE_CF_PUSH=true` → push the report to Cloudflare R2 (`scripts/push_report.py`); `ENABLE_LARK_NOTIFY=true` → send a result card to Lark (`scripts/lark_notify.py`). Flags off → skip silently. Project has no `.env` yet → run skill `setup` once (cross-platform Win/Mac, auto-installs `wrangler`).
 
 ## Principles
 - Always compile before running. Prefer scripts (they self-check the device). Do **NOT** edit test code — just run. Print the platform run clearly.
