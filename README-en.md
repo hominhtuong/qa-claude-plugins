@@ -58,6 +58,19 @@ When a new version is out:
 
 Run `/qa:setup-plugin --update` to refresh the `.example`/template files in `.claude/qa-claude/` (your `.env` and `log-bug.config.yml` are **never overwritten**).
 
+## MCP servers (auto-registered when the plugin is enabled)
+
+The plugin **bundles** the MCP servers automation needs — enabling the plugin is enough, **no manual `.mcp.json`**:
+
+| Server | Used for | Config |
+|---|---|---|
+| **figma** | read design (exploratory, design-conformance) | built-in (http) — just sign in to Figma when prompted |
+| **playwright** | web driver | built-in (`npx @playwright/mcp`) |
+| **appium** | iOS/Android driver (port 4723) | built-in (`npx appium-mcp`) — still run the Appium server via `start-appium.sh` |
+| **Lark** | read docs/Bitable | ❌ **not** via MCP — uses Python `lark_read.py` reading `.plugin.env` (dual tenant/user mode, avoids token errors). To use the MCP, add `@larksuiteoapi/lark-mcp` to your project `.mcp.json` (see [lark-mcp-guide](plugins/qa/rules/lark-mcp-guide.md)). |
+
+> If your project **already** configures its own figma/appium/playwright MCP, yours takes precedence; the plugin locates the right tools via ToolSearch, no conflict.
+
 ## Command list
 
 > **How to call**: every plugin command is invoked as **`/qa:<name>`** (e.g. `/qa:exploratory`). This is Claude Code's mandatory namespace for plugins — it can't be dropped. The `*-method` / `*-app` / `*-web`… entries in the menu are **internal skills**; you **don't call them directly** — just call the commands.

@@ -8,7 +8,7 @@ description: Reusable logic to use Appium MCP to launch the app, ensure it is at
 Reusable capability: from a blank state → standing on the correct feature screen on a real device/emulator (Appium MCP), ready for `find-elements-android`/`-ios`. This is exactly the `GoToHomeTest` flow done manually via MCP.
 
 ## ⚠️ Two independent Appium servers — don't confuse them
-- **MCP (this skill uses)**: server on a **fixed port 4723** per `.mcp.json` (`APPIUM_PORT=4723`). Start it with `./scripts/start-appium.sh` (kills the old port + starts + waits for ready). The MCP `appium_*` tools connect here.
+- **MCP (this skill uses)**: the plugin **bundles** an Appium MCP server (`mcp__plugin_qa_appium__*`, fixed port `4723`); if the project configures its own, the tools may be `mcp__appium__*` — locate `appium_*` tools via ToolSearch. The Appium **server** still must be running: start it with `./scripts/start-appium.sh` (kills the old port + starts + waits for ready); the MCP `appium_*` tools connect to `127.0.0.1:4723`.
 - **Test runtime (`/qa:run`, NOT this skill)**: `AppiumServer.java` calls `usingAnyFreePort()` → any free port (or `APPIUM_SERVER_URL` if set). Does not touch 4723. → Don't run start-appium.sh for `/qa:run`.
 
 ## Procedure

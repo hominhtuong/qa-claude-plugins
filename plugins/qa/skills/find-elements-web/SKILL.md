@@ -8,7 +8,7 @@ description: Reusable logic to extract durable elements from the currently open 
 Reusable capability: from the currently open page (after the `navigate-web` skill) → a list of elements + stable Playwright locators, feeding `cook-web`. Locator strategy: [design-system.md §locator](../../rules/web/design-system.md). This skill is the locator-PICKING + catalog-writing part; DOM discovery from the real app runs via Playwright MCP.
 
 ## Procedure
-1. **Get a snapshot of the current screen**: `mcp__plugin_playwright_playwright__browser_snapshot` (accessibility tree: role + name + ref) — the primary source for choosing `getByRole`. Need raw attributes (`data-testid`, `id`, `name`, `placeholder`, `aria-*`) → `mcp__plugin_playwright_playwright__browser_evaluate` to read the element's DOM.
+1. **Get a snapshot of the current screen**: `mcp__plugin_qa_playwright__browser_snapshot` (accessibility tree: role + name + ref) — the primary source for choosing `getByRole`. Need raw attributes (`data-testid`, `id`, `name`, `placeholder`, `aria-*`) → `mcp__plugin_qa_playwright__browser_evaluate` to read the element's DOM.
 2. **Pick the locator** by web priority for each important element (top-down preference):
    - `page.getByRole(AriaRole.X, name("..."))` — **best**, closest to the user, survives refactors.
    - `page.getByTestId("...")` — `data-testid` (only when the attribute has been confirmed via `setTestIdAttribute`).
@@ -20,4 +20,4 @@ Reusable capability: from the currently open page (after the `navigate-web` skil
 4. **Choose `screenKeyLocator()`**: 1 element that always appears & is unique when the screen is shown (heading/marker app-shell), language-proof — prefer `data-testid` or role-heading.
 5. **Return**: a table `element (role) | chosen locator | raw attributes | missing testid?` for the Screen declaration step.
 
-> This skill only EXTRACTS + picks locators; writing them into Java fields is the `cook-web` skill. Capture evidence → `mcp__plugin_playwright_playwright__browser_take_screenshot` — **pass the full relative path as `filename`**: `sitemap/screenshots/<name>.png` (a bare file name falls back to the MCP output dir / project root), NOT to Desktop.
+> This skill only EXTRACTS + picks locators; writing them into Java fields is the `cook-web` skill. Capture evidence → `mcp__plugin_qa_playwright__browser_take_screenshot` — **pass the full relative path as `filename`**: `sitemap/screenshots/<name>.png` (a bare file name falls back to the MCP output dir / project root), NOT to Desktop.

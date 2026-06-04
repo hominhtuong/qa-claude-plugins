@@ -9,6 +9,7 @@ tools:
   - Grep
   - Bash
   - ToolSearch
+  - mcp__plugin_qa_figma*
   - mcp__figma*
 ---
 
@@ -43,12 +44,13 @@ When invoked, you will receive:
 
 ### Step 1: Load Figma MCP tools
 
-**REQUIRED** — fetch tool schemas before using any Figma tools:
+**REQUIRED** — fetch tool schemas before using any Figma tools. The plugin **bundles** a Figma MCP server, so the tools are usually `mcp__plugin_qa_figma__*`; but if the project configures its own Figma MCP (same `mcp.figma.com` endpoint takes precedence) they appear as `mcp__figma__*`. So **find them by keyword**, then use whatever full name ToolSearch returns:
 ```
-ToolSearch("select:mcp__figma__get_metadata")
-ToolSearch("select:mcp__figma__get_design_context")
-ToolSearch("select:mcp__figma__get_screenshot")
+ToolSearch("figma get_metadata")
+ToolSearch("figma get_design_context")
+ToolSearch("figma get_screenshot")
 ```
+(If keyword search misses, try the exact names `select:mcp__plugin_qa_figma__get_metadata` then `select:mcp__figma__get_metadata`.) In the steps below, `mcp__figma__<tool>` is shorthand — call the actual resolved name.
 
 ### Step 2: Parse Figma URL
 

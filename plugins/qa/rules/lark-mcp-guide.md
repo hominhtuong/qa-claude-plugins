@@ -39,10 +39,27 @@ to fix scopes — do NOT hardcode tokens.
 
 ---
 
-## (Reference) MCP token param
+## (Optional) Using the Lark MCP instead of Python
 
-If using the MCP directly: config `--token-mode auto`; per call `useUAT: true` → User Access
-Token, `useUAT: false`/omit → Tenant Access Token. Scope list at `.mcp.json` → `_scopes`.
+The plugin does **NOT bundle** a Lark MCP (it bundles only figma/playwright/appium — see `plugins/qa/.mcp.json`). Lark stays Python because a bundled MCP can only read shell env vars, not `.plugin.env`, and the MCP often hits `99991668`. If you still want the MCP path, add it to **your own project `.mcp.json`** (env from your shell):
+
+```json
+{
+  "mcpServers": {
+    "lark-mcp": {
+      "command": "npx",
+      "args": ["-y", "@larksuiteoapi/lark-mcp", "mcp",
+               "-a", "${LARK_APP_ID}", "-s", "${LARK_APP_SECRET}",
+               "--domain", "https://open.larksuite.com", "--token-mode", "auto"]
+    }
+  }
+}
+```
+
+Then the `lark-reader` agent can fall back to the `mcp__lark*` tools when the Python helper is unavailable.
+
+### MCP token param
+Config `--token-mode auto`; per call `useUAT: true` → User Access Token, `useUAT: false`/omit → Tenant Access Token. Scope list at `.mcp.json` → `_scopes`.
 
 ---
 

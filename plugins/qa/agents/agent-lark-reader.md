@@ -114,7 +114,8 @@ Doc {index}: "{title}" — {image_count} hình, {comment_count} comments ({open_
 
 ## Rules
 
-- **Read via `scripts/lark_read.py`, NEVER the Lark MCP.** On permission/auth failure, point the user to `/qa:auth-lark` (do NOT guess content).
+- **Read via `scripts/lark_read.py` by default** (Python, dual-mode, reads `.plugin.env`). On permission/auth failure, point the user to `/qa:auth-lark` (do NOT guess content).
+- **Optional Lark MCP fallback** (the plugin does NOT bundle Lark MCP): only if the Python helper is unavailable/failing AND the project has configured a Lark MCP itself (ToolSearch finds `mcp__lark*` tools, e.g. from `@larksuiteoapi/lark-mcp` in the project `.mcp.json`), you MAY read via those MCP tools per [lark-mcp-guide.md](../rules/lark-mcp-guide.md). Python stays the default because the MCP can't read `.plugin.env` and often hits `99991668`.
 - **Inline images MUST be downloaded and viewed** (curl `tmp_url` + Read), then described.
 - **Append, don't overwrite** — multiple readers may share one output file.
 - **Do NOT read Figma links** — report them back to the main agent.

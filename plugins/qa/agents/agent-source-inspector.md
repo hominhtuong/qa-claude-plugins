@@ -8,6 +8,7 @@ tools:
   - Glob
   - Grep
   - Bash
+  - mcp__plugin_qa_appium*
   - mcp__appium*
 ---
 
