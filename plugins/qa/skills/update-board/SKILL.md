@@ -8,7 +8,7 @@ description: Reusable logic to manage the Lark bug board registry in .claude/qa-
 Edit the bug board registry so `/qa:log-bug` writes to the right place. Target file: `.claude/qa-claude/log-bug.config.yml` (created by skill `setup`). **NEVER print tokens/secrets.**
 
 ## Procedure
-1. **Locate config**: `.claude/qa-claude/log-bug.config.yml`. Missing → tell the user to run skill `setup` first.
+1. **Locate config**: `.claude/qa-claude/log-bug.config.yml`. Missing → tell the user to run `/qa:setup-plugin` first.
 2. **Parse the input** (`$ARGUMENTS`):
    - **Board URL** → extract ids:
      - `https://<domain>.larksuite.com/base/<base_id>?table=<table_id>&view=<view_id>` → `base_id`, `table_id`, `view_id`.

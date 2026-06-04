@@ -31,6 +31,6 @@ Take the platform from the argument (`web|android|ios`), else auto-detect (playw
 `/qa:analyze-spec <spec>` → `/qa:plan-gen-testcases <feature>` → `/qa:gen-testcases <plan>` (test cases into Sheet/xlsx) → `/qa:log-bug <description>` (set the board with `/qa:update-board`).
 
 ## Shared / utility commands
-`/qa:help` (this overview) · `/qa:status` · `/qa:ask` · `/qa:missing-test-ids` · `/qa:count-cases` · `/qa:count-testcases` · `/qa:kill-appium`. Integrations setup: skills `setup`/`doctor` — scaffold `.claude/qa-claude/.env` + editable resources in `./.claude/qa-claude/` (testcase template, log-bug board config), plus optional Lark/Slack/Teams/Telegram notify + Cloudflare R2 / S3 report upload.
+`/qa:setup-plugin` (one-click project setup — Claude runs the script, no terminal) · `/qa:help` (this overview) · `/qa:status` · `/qa:ask` · `/qa:missing-test-ids` · `/qa:count-cases` · `/qa:count-testcases` · `/qa:kill-appium`. `/qa:setup-plugin` creates `.claude/qa-claude/` (`.env` + `log-bug.config.yml` + templates) and checks the toolchain (skill `setup`/`doctor`); enables optional Lark/Slack/Teams/Telegram notify + Cloudflare R2 / S3 report upload.
 
 > A project can add its own commands in `.claude/commands/` (invoked WITHOUT a prefix, e.g. `/mycmd`); they run independently alongside the plugin's `/qa:` commands (different namespaces, no clash). Install / update: `/plugin marketplace update qa-claude` → `/reload-plugins`.
