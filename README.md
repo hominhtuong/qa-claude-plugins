@@ -1,5 +1,7 @@
 # QA Claude Plugins
 
+🌐 **Tiếng Việt** · [English](README-en.md)
+
 > **Bộ plugin Claude Code mã nguồn mở cho mọi kỹ sư QA/QC dùng AI.** Tự động hoá kiểm thử web & mobile, sinh test case từ tài liệu, exploratory testing, review code - biến Claude Code thành một "QA engineer" thực thụ ngay trong terminal/IDE của bạn.
 
 Miễn phí & mở cho **tất cả mọi người**. Cài một lần, dùng cho mọi project có Claude. Mọi command gọi dạng **`/qa:<tên>`** (ví dụ `/qa:exploratory`).
