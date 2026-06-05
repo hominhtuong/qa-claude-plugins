@@ -9,6 +9,8 @@ Reusable capability: from a blank state → standing on the correct feature scre
 
 > The Playwright MCP is **bundled** by the plugin, so its tools are `mcp__plugin_qa_playwright__*` (the `browser_*` names below are shorthand). If your project configures its own Playwright MCP, the prefix may differ — locate the `browser_*` tools via ToolSearch and call the resolved names.
 
+> **Headed vs headless**: the bundled server launches a **visible** browser by default (easier to watch + screenshot). To run without a window (CI/background), set `QA_HEADLESS=true` in the main project's `./.env` (or `.claude/qa-claude/.plugin.env`) — it is resolved at server startup by `scripts/mcp_playwright.py`. This is a launch-time setting: it cannot be toggled mid-session, so set it before the first `browser_navigate`.
+
 ## Procedure
 1. **Get config & account**: `base.url`/`login.url`/`home.path` from `configs/<env>.properties`; `LOGIN_USERNAME`/`LOGIN_PASSWORD` from `.env`. **Do NOT print the password** to the log/report.
 2. **Open the app**: `mcp__plugin_qa_playwright__browser_navigate` to `base.url` (or `base.url + home.path`). No session → the app redirects to the Keycloak realm (`login.url`).

@@ -1,13 +1,14 @@
 {
   "_comment": "MCP servers bundled with the qa plugin — auto-register when the plugin is enabled (no manual project setup). Tools appear namespaced as mcp__plugin_qa_<server>__<tool>. Only secret-free servers are bundled here: figma (design read), playwright (web driver), appium (mobile driver). Lark is NOT bundled — it is read via scripts/lark_read.py (dual tenant/user token from .claude/qa-claude/.plugin.env), because a plugin-bundled MCP server can only read shell env vars, not .plugin.env. Users who still prefer the Lark MCP can add @larksuiteoapi/lark-mcp to their own project .mcp.json (see rules/lark-mcp-guide.md). NOTE: a project/user .mcp.json server with the SAME http endpoint (e.g. figma) takes precedence over this bundle and its tools keep the short name mcp__figma__* — so readers locate figma tools via ToolSearch keyword, not a hardcoded prefix.",
+  "_comment_playwright": "Launched via scripts/mcp_playwright.py (not npx directly) so HEADLESS can be resolved from the project before the browser server starts. Resolution order: the main project's ./.env (QA_HEADLESS/HEADLESS) → shell env + .plugin.env → default headed. A project that adds its own `playwright` server overrides this bundle entirely and controls headless on its own.",
   "mcpServers": {
     "figma": {
       "type": "http",
       "url": "https://mcp.figma.com/mcp"
     },
     "playwright": {
-      "command": "npx",
-      "args": ["-y", "@playwright/mcp@latest"]
+      "command": "python3",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/mcp_playwright.py"]
     },
     "appium": {
       "command": "npx",
