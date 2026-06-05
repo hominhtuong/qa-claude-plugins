@@ -33,8 +33,25 @@ from _env import load_env, project_root  # noqa: E402
 _HEADLESS_KEYS = ("QA_HEADLESS", "HEADLESS")
 
 
+def _clean_value(value: str) -> str:
+    """Normalize a raw .env value: strip an unquoted inline comment, then quotes/space.
+
+    Handles real-world lines like `HEADLESS=true   # true | false` — the trailing
+    `# ...` is a comment, not part of the value, so it must not reach the truthiness test.
+    A value wrapped in quotes is taken verbatim (its `#` is data, not a comment).
+    """
+    v = value.strip()
+    if v[:1] in ("'", '"'):
+        return v.strip('"').strip("'")
+    # unquoted: an inline comment starts at the first '#' preceded by whitespace
+    for sep in (" #", "\t#"):
+        if sep in v:
+            v = v.split(sep, 1)[0]
+    return v.strip()
+
+
 def _truthy(value: str) -> bool:
-    return str(value).strip().strip('"').strip("'").lower() in ("1", "true", "yes", "on")
+    return _clean_value(str(value)).lower() in ("1", "true", "yes", "on")
 
 
 def _read_dotenv_value(path: Path, *keys: str) -> str | None:
@@ -48,7 +65,7 @@ def _read_dotenv_value(path: Path, *keys: str) -> str | None:
                 continue
             k, v = line.split("=", 1)
             if k.strip() in keys:
-                return v.strip()
+                return _clean_value(v)
     except Exception:  # noqa: BLE001 — never let env parsing break server launch
         pass
     return None

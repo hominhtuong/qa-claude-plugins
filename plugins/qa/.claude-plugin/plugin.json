@@ -1,7 +1,7 @@
 {
   "name": "qa",
   "description": "All-in-one QA toolkit for Claude Code; commands are namespaced /qa:<name>. Automation (Playwright Web + Appium iOS/Android), auto-routing by platform (web/android/ios) to load only the matching skill: exploratory/plan-tests/find-elements/cook/run/fix/analyze/count-cases/review/push-code/merge-request. Manual QA with distinct command names: analyze-spec/plan-gen-testcases/gen-testcases/count-testcases/log-bug/update-board.",
-  "version": "0.0.9",
+  "version": "0.0.10",
   "author": { "name": "Mitu Ultra", "email": "support@mituultra.com" },
   "keywords": ["qa", "qc", "automation", "manual-testing", "playwright", "appium", "web", "mobile", "android", "ios", "testcase", "test-plan", "exploratory", "pom"]
 }

@@ -5,7 +5,7 @@
     "email": "support@mituultra.com"
   },
   "description": "Open-source Claude Code plugin for every QA/QC engineer using AI: web/mobile automation, test-case generation, exploratory testing, review. Install once, use across projects; commands are namespaced as /qa:<command>. Automation and manual QA have distinct command names; automation commands auto-route by platform (web/android/ios).",
-  "version": "0.0.9",
+  "version": "0.0.10",
   "plugins": [
     {
       "name": "qa",
