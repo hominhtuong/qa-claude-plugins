@@ -20,6 +20,7 @@ Prepare a project to use this plugin's config + optional integrations. All plugi
    | `log-bug.config.yml` | 🧩 board ids + dev-pic/field mappings — **SCAFFOLD** (your copy, never overwritten) |
    | `.plugin.env.example` · `log-bug.config.example.yml` | references — **OVERWRITE** (refreshed each run / on update) |
    | `testcase-template.md` | 📄 test-case format (plugin-owned) — **OVERWRITE** |
+   | `README.md` | 📖 usage guide — full command list, auto-generated from the live commands — **OVERWRITE** |
 
    Then it adds `.claude/qa-claude/.plugin.env`, `.qa-venv/`, `results/tests/.upload-logs/` to `.gitignore`, and runs **doctor** (`--no-fix` to skip auto-installing `wrangler`).
 

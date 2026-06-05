@@ -69,7 +69,7 @@ Open the correct find-elements skill per platform: **web** `find-elements-web` �
 Per `exploratory-method`: write `results/<feature-name>/dev-bug-report-<ddMMMyyyy>.md` following the template (each bug: Screen · Verbatim symptom · Root cause if found · Impact · **Expectation — cite the spec section/oracle when available** · Evidence · Defect ID) + a **✅ Checked — NO bug** section + **❓ NEEDS-TRIAGE** (include spec gaps/open questions from Step 0.5) + environment notes. Append each `[APP-BUG]` to the cross-feature register `results/bug-summary.md`.
 
 ## Step 5 — GATE DECISION + finish
-- 🔴 **Has `[APP-BUG]`** → deliverable = bug report for dev. Do **NOT** `/qa:plan-tests`/`/qa:cook` for the broken part.
+- 🔴 **Has `[APP-BUG]`** → deliverable = bug report for dev. Do **NOT** `/qa:plan-tests`/`/qa:cook` for the broken part. To push these bugs to the Lark board without re-typing, suggest **`/qa:log-bug from <feature-name>`** (imports this report, you pick which bugs + add Dev PIC/Sprint/Version).
 - 🟢 **No `[APP-BUG]`** → app correct → Screen/elements extracted → suggest **`/qa:plan-tests <feature-name>`**.
 
 Close the session (`appium_quit_session` / `browser_close`). Print: platform, **feature folder** `results/<feature-name>/`, **spec sources read + oracle path** (`analysis.md`) or "no spec", bug report path (+ register `results/bug-summary.md`), list of `[APP-BUG]`, **sitemap nodes updated (always)** + Screen built (if clean), **gate conclusion**.

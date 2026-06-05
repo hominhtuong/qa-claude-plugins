@@ -9,6 +9,7 @@ All plugin config lives in ONE folder, separate from the project's own ./.env:
       log-bug.config.yml       # 🧩 board ids + dev-pic/field mappings (user-filled).   SCAFFOLD (never overwritten)
       log-bug.config.example.yml # reference for the config schema.                     OVERWRITE
       testcase-template.md     # 📄 test-case format (plugin-owned).                    OVERWRITE
+      README.md                # 📖 usage guide — full command list (auto-generated).   OVERWRITE
 
 SCAFFOLD = create only if missing (protects your secrets / board config).
 OVERWRITE = always refreshed from the plugin (so an update brings the latest schema/format).
@@ -23,6 +24,7 @@ import sys
 from pathlib import Path
 
 import doctor
+import gen_guide
 from _env import project_root
 
 PLUGIN_ROOT = Path(__file__).resolve().parent.parent      # scripts/ -> plugin root
@@ -75,6 +77,10 @@ def install_managed(root: Path):
         src = MANAGED_SRC / name
         if src.is_file():
             _copy(src, dst_dir / name, overwrite=True)
+
+    # 4) usage guide: README.md listing every command (OVERWRITE — regenerated each run)
+    guide = gen_guide.install(dst_dir)
+    print(f"[setup]   write  {guide.name}  (usage guide — full command list, auto-generated)")
 
     print("[setup] (edit .plugin.env + log-bug.config.yml — these are yours and never overwritten)")
 
