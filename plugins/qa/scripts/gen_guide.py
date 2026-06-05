@@ -22,7 +22,7 @@ GUIDE_NAME = "README.md"                                   # lives in .claude/qa
 # is ever silently dropped.
 GROUPS = [
     ("🚀 Bắt đầu & trợ giúp", [
-        "setup-plugin", "help", "ask", "status", "feedback",
+        "setup", "help", "ask", "status", "feedback",
     ]),
     ("🤖 Kiểm thử tự động — Automation (Playwright Web / Appium iOS·Android)", [
         "exploratory", "plan-tests", "find-elements", "cook", "run", "fix",
@@ -95,7 +95,7 @@ def build() -> str:
 
     lines.append("## ⚡ Bắt đầu nhanh")
     lines.append("")
-    lines.append("1. **Cài đặt 1 lần:** `/qa:setup-plugin` — tạo `.claude/qa-claude/` (config + `.plugin.env`), vá `.gitignore`, kiểm tra toolchain.")
+    lines.append("1. **Cài đặt 1 lần:** `/qa:setup` — tạo `.claude/qa-claude/` (config + `.plugin.env`), vá `.gitignore`, kiểm tra toolchain.")
     lines.append("2. **Điền secrets (nếu dùng Lark/R2/notify):** mở `.claude/qa-claude/.plugin.env` và bật các `ENABLE_*` cần thiết.")
     lines.append("3. **Cần Lark bug board?** điền `.claude/qa-claude/log-bug.config.yml` rồi `/qa:auth-lark` để xác thực.")
     lines.append("4. **Chưa rõ lệnh nào?** gõ `/qa:help` (tổng quan) hoặc `/qa:help <tên-lệnh>` (đi sâu 1 lệnh).")

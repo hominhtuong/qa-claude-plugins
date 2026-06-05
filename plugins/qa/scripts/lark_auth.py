@@ -345,7 +345,7 @@ def run(requested: list[str], command: str | None, write: bool,
     if not avail[TENANT] and not avail[USER]:
         return 2, {"ok": False, "error": "No Lark credentials in .claude/qa-claude/.plugin.env — "
                    "set ENABLE_LARK_APP=true + LARK_APP_ID/LARK_APP_SECRET (tenant mode), and/or "
-                   "run /qa:auth-lark --login (user mode). See /qa:setup-plugin."}
+                   "run /qa:auth-lark --login (user mode). See /qa:setup."}
 
     # Persist the preference if the caller set one.
     pref = (pref_override or env_str("LARK_TOKEN_MODE", AUTO)).strip().lower()

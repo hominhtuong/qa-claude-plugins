@@ -198,7 +198,7 @@ def main(argv=None):
     avail = available_modes()
     if not avail["tenant"] and not avail["user"]:
         print(json.dumps({"ok": False, "error": "No Lark credentials configured — run "
-                          "/qa:setup-plugin then /qa:auth-lark (tenant) and/or "
+                          "/qa:setup then /qa:auth-lark (tenant) and/or "
                           "/qa:auth-lark --login (user)."}, ensure_ascii=False))
         return 2
 
