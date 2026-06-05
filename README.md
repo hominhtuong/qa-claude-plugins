@@ -90,6 +90,7 @@ Plugin **tự đính kèm** các MCP server cần cho automation — bật plugi
 
 | Command | Việc |
 |---|---|
+| `/qa:sitemap [feature] [platform]` | **Khám phá & dựng sitemap**: đi hết app/web (hoặc chỉ 1 feature, ví dụ `/qa:sitemap home`), khai báo **element của từng màn** (tên + locator bền vững) và cập nhật bản đồ điều hướng vào thư mục `sitemap/`. **Chỉ map — KHÔNG viết test, KHÔNG bắt bug, KHÔNG sinh Page Object.** Chạy lại sẽ *bổ sung* (merge theo tên element), không tạo trùng. |
 | `/qa:exploratory <feature> [platform] [--spec <file\|url\|figma>]` | Khám phá **toàn bộ** màn hình như QA senior, **săn bug đến cùng** — gặp bug **không dừng**, ghi nhận + triage rồi đi tiếp đến hết feature; đối chiếu **spec/Figma** nếu có → bug *spec-mismatch*; chụp bằng chứng. **Xong mới kết luận (GATE):** có `[APP-BUG]` → xuất **bug report** gửi dev (🚦 không viết test cho phần app sai); **sạch** → khai báo elements/Screen → sẵn cho `/qa:plan-tests`. |
 | `/qa:plan-tests <feature>` | Thiết kế kế hoạch test automation (chỉ khi exploratory sạch). |
 | `/qa:find-elements <màn>` | Trích locator bền vững (tự rẽ web/android/ios). |

@@ -1,7 +1,7 @@
 {
   "name": "qa",
-  "description": "All-in-one QA toolkit for Claude Code; commands are namespaced /qa:<name>. Automation (Playwright Web + Appium iOS/Android), auto-routing by platform (web/android/ios) to load only the matching skill: exploratory/plan-tests/find-elements/cook/run/fix/analyze/count-cases/review/push-code/merge-request. Manual QA with distinct command names: analyze-spec/plan-gen-testcases/gen-testcases/count-testcases/log-bug/update-board.",
-  "version": "0.0.11",
+  "description": "All-in-one QA toolkit for Claude Code; commands are namespaced /qa:<name>. Automation (Playwright Web + Appium iOS/Android), auto-routing by platform (web/android/ios) to load only the matching skill: sitemap/exploratory/plan-tests/find-elements/cook/run/fix/analyze/count-cases/review/push-code/merge-request. sitemap crawls the whole app/web (or one feature) to declare every screen's elements + build the navigation map — discovery only, no tests/bugs. Manual QA with distinct command names: analyze-spec/plan-gen-testcases/gen-testcases/count-testcases/log-bug/update-board.",
+  "version": "0.0.12",
   "author": { "name": "Mitu Ultra", "email": "support@mituultra.com" },
-  "keywords": ["qa", "qc", "automation", "manual-testing", "playwright", "appium", "web", "mobile", "android", "ios", "testcase", "test-plan", "exploratory", "pom"]
+  "keywords": ["qa", "qc", "automation", "manual-testing", "playwright", "appium", "web", "mobile", "android", "ios", "testcase", "test-plan", "exploratory", "sitemap", "pom"]
 }

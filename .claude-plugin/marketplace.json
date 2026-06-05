@@ -5,12 +5,12 @@
     "email": "support@mituultra.com"
   },
   "description": "Open-source Claude Code plugin for every QA/QC engineer using AI: web/mobile automation, test-case generation, exploratory testing, review. Install once, use across projects; commands are namespaced as /qa:<command>. Automation and manual QA have distinct command names; automation commands auto-route by platform (web/android/ios).",
-  "version": "0.0.11",
+  "version": "0.0.12",
   "plugins": [
     {
       "name": "qa",
       "source": "./plugins/qa",
-      "description": "All-in-one QA toolkit; commands namespaced /qa:<name>. Automation (Playwright Web + Appium iOS/Android, auto-routes by platform): exploratory/plan-tests/find-elements/cook/run/fix/analyze/count-cases/review/push-code/merge-request. Manual QA (distinct names): analyze-spec/plan-gen-testcases/gen-testcases/count-testcases/log-bug/update-board. Optional Lark/Slack/Teams/Telegram notify + Cloudflare R2 / S3 report upload."
+      "description": "All-in-one QA toolkit; commands namespaced /qa:<name>. Automation (Playwright Web + Appium iOS/Android, auto-routes by platform): sitemap/exploratory/plan-tests/find-elements/cook/run/fix/analyze/count-cases/review/push-code/merge-request. sitemap crawls the whole app/web (or one feature) to declare each screen's elements + build the navigation map (discovery only — no tests/bugs). Manual QA (distinct names): analyze-spec/plan-gen-testcases/gen-testcases/count-testcases/log-bug/update-board. Optional Lark/Slack/Teams/Telegram notify + Cloudflare R2 / S3 report upload."
     }
   ]
 }
