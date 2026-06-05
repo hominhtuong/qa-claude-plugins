@@ -22,8 +22,10 @@ Reusable capability: probe a feature → **find app bugs** → bug report for th
 7. **Bug report for the dev**: write `results/<feature-name>/dev-bug-report-<ddMMMyyyy>.md` in the **exact format** of [exploratory-bug-report-template.md](../../rules/exploratory-bug-report-template.md) — each bug: Screen · Symptom (verbatim) · Root cause (if found) · Impact · Expectation · Evidence · Defect ID. Include a **✅ Checked — NO bug** section + **❓ NEEDS-TRIAGE** + environment notes. Write the report in Vietnamese.
 8. **Sync the register**: append each `[APP-BUG]` into the cross-feature register `results/bug-summary.md` (assign APP-ID, update the per-function count table + severity distribution).
 
-## GATE decision
-- 🔴 **Has `[APP-BUG]`** → the feature is NOT done. **Deliverable = bug report** for the dev. Do **NOT** proceed to `/qa:plan-tests`/`/qa:cook` for the broken part (only cleanly separable clean parts move on).
-- 🟢 **No `[APP-BUG]`** (only possibly FW/ENV/DATA) → app is correct → extract clean elements → ready for **`/qa:plan-tests`**.
+> 🏁 **Run the FULL sweep before deciding.** Steps 3–6 cover the *whole* feature: a bug you hit mid-way is **logged + triaged + screenshotted, then you keep going** — never abort the exploration on the first (or any) bug. Only once every probe in the checklist is done do you write the report (7–8) and take the GATE below. The goal is a *complete* picture of the feature, not the first defect.
+
+## GATE decision (only after the full sweep)
+- 🔴 **Has `[APP-BUG]`** → the feature is NOT done. **Deliverable = bug report** for the dev (all bugs found in the sweep). Do **NOT** proceed to `/qa:plan-tests`/`/qa:cook` for the broken part (only cleanly separable clean parts move on).
+- 🟢 **No `[APP-BUG]`** (only possibly FW/ENV/DATA) → app is correct → **extract clean elements + declare the Screen** → ready for **`/qa:plan-tests`**.
 
 > *Automation runs only when the app is already correct.* Planning is the `plan-method` skill; automation errors (FW) are fixed via the `fix-by-layer` skill, NOT recorded in the app bug section.

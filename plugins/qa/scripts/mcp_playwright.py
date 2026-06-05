@@ -6,17 +6,19 @@ the MCP server starts, so it must be resolved BEFORE `@playwright/mcp` launches.
 thin wrapper reads the preference from the project, then execs the real server with (or
 without) `--headless`. It writes NOTHING to stdout — stdout is the MCP stdio channel.
 
-Headless resolution order (first hit wins):
-  1. The main project's ./.env           — QA_HEADLESS / HEADLESS
-  2. Shell env + the plugin's .plugin.env — QA_HEADLESS / HEADLESS  (loaded via _env)
+The preference is keyed by ANY variable whose NAME contains "headless" (case-insensitive)
+— e.g. HEADLESS, QA_HEADLESS, PW_HEADLESS, PLAYWRIGHT_HEADLESS all work — so it picks up
+whatever the project already uses. Resolution order (first hit wins):
+  1. The main project's ./.env           — first *headless* key found
+  2. Shell env + the plugin's .plugin.env — first *headless* key found (loaded via _env)
   3. Default: headed (visible browser)    — matches Playwright's own default
 
 Note: a project that configures its OWN `playwright` server in .mcp.json replaces this
 bundle entirely (same-name override), so it controls headless on its own and this
 launcher never runs — that is the intended ".mcp.json then default" layer.
 
-Accepted truthy values for the env var: 1 / true / yes / on (case-insensitive).
-Set QA_HEADLESS=false to force a visible browser explicitly.
+Accepted truthy values: 1 / true / yes / on (case-insensitive). Set HEADLESS=false to
+force a visible browser explicitly.
 """
 from __future__ import annotations
 
@@ -30,7 +32,9 @@ from pathlib import Path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from _env import load_env, project_root  # noqa: E402
 
-_HEADLESS_KEYS = ("QA_HEADLESS", "HEADLESS")
+def _is_headless_key(name: str) -> bool:
+    """True for any env/.env key whose name mentions 'headless' (case-insensitive)."""
+    return "headless" in name.strip().lower()
 
 
 def _clean_value(value: str) -> str:
@@ -54,8 +58,8 @@ def _truthy(value: str) -> bool:
     return _clean_value(str(value)).lower() in ("1", "true", "yes", "on")
 
 
-def _read_dotenv_value(path: Path, *keys: str) -> str | None:
-    """Return the first matching KEY=value from a .env-style file, or None."""
+def _read_dotenv_headless(path: Path) -> str | None:
+    """Return the value of the first *headless* key in a .env-style file, or None."""
     if not path.is_file():
         return None
     try:
@@ -64,7 +68,7 @@ def _read_dotenv_value(path: Path, *keys: str) -> str | None:
             if not line or line.startswith("#") or "=" not in line:
                 continue
             k, v = line.split("=", 1)
-            if k.strip() in keys:
+            if _is_headless_key(k):
                 return _clean_value(v)
     except Exception:  # noqa: BLE001 — never let env parsing break server launch
         pass
@@ -73,14 +77,14 @@ def _read_dotenv_value(path: Path, *keys: str) -> str | None:
 
 def resolve_headless() -> bool:
     # 1. main project's ./.env wins (explicit project setup)
-    raw = _read_dotenv_value(project_root() / ".env", *_HEADLESS_KEYS)
+    raw = _read_dotenv_headless(project_root() / ".env")
     if raw is not None:
         return _truthy(raw)
     # 2. shell env + .plugin.env (load_env uses setdefault, won't clobber shell)
     load_env()
-    for key in _HEADLESS_KEYS:
-        if key in os.environ:
-            return _truthy(os.environ[key])
+    for key, val in os.environ.items():
+        if _is_headless_key(key):
+            return _truthy(val)
     # 3. default: headed
     return False
 

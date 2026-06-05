@@ -92,7 +92,7 @@ The plugin **bundles** the MCP servers automation needs — enabling the plugin 
 
 | Command | What it does |
 |---|---|
-| `/qa:exploratory <feature> [platform]` | Explore a screen like a senior QA, **hunt bugs**, capture evidence, output a dev bug report. 🚦 Any `[APP-BUG]` → stop, don't write tests for a broken app. |
+| `/qa:exploratory <feature> [platform] [--spec <file\|url\|figma>]` | Explore the **whole** screen like a senior QA, **hunt bugs to the end** — finding a bug does **not** stop the run; log + triage it and keep going through the entire feature; compare against **spec/Figma** when provided → *spec-mismatch* bugs; capture evidence. **Only then conclude (GATE):** any `[APP-BUG]` → emit a **bug report** for dev (🚦 don't write tests for the broken part); **clean** → declare elements/Screen → ready for `/qa:plan-tests`. |
 | `/qa:plan-tests <feature>` | Design an automation test plan (only when exploratory is clean). |
 | `/qa:find-elements <screen>` | Extract durable locators (auto-routes web/android/ios). |
 | `/qa:cook <plan\|request>` | Write Page Object + test code following the design pattern. |

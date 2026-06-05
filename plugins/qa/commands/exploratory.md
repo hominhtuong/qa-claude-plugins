@@ -11,7 +11,8 @@ Feature to explore: **$ARGUMENTS**
 **Goal #1 — FIND BUGS**: probe the feature screen like a **senior exploratory QA** to surface app defects → produce a **bug report for dev** following [exploratory-bug-report-template.md](../rules/exploratory-bug-report-template.md).
 **Goal #2 — Prepare tests (ONLY when clean)**: feature with **no `[APP-BUG]`** → extract elements → ready for `/qa:plan-tests`/`/qa:cook`.
 
-> ⚠️ **GATE**: *Automation only works when the app is correct.* A feature with `[APP-BUG]` → **do NOT write tests** for that part, the deliverable is a **bug report**. Only a **clean** feature proceeds to `/qa:plan-tests`.
+> ⚠️ **Explore to the END — do NOT stop at the first bug.** Finding an `[APP-BUG]` does not abort the run: log it, triage it, capture evidence, and **keep probing the rest of the feature** so the report is complete. The branch decision happens **only after the full sweep** (Step 5), never mid-exploration.
+> ⚠️ **GATE** (after the full sweep): *Automation only works when the app is correct.* A feature with `[APP-BUG]` → **do NOT write tests** for that part, the deliverable is a **bug report**. Only a **clean** feature proceeds to `/qa:plan-tests`.
 > ⚠️ **Suspect the app by default**: every wrong/red observation **MUST** be triaged per [failure-triage.md](../rules/failure-triage.md): `[APP-BUG]` (app wrong — blocks tests) vs `[FRAMEWORK]` (our element capture/automation is wrong) vs `[ENV]`/`[DATA]`. Do NOT assume the app is correct.
 
 ## Step 0 — Lock platform + feature folder (routing)
