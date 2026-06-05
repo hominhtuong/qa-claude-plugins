@@ -10,6 +10,8 @@ User request: **$ARGUMENTS**
 
 > Want to plan MANUAL TEST CASES (not automation code) instead? Use **`/qa:plan-gen-testcases`**.
 
+> **Output language**: write the plan/report prose in the **configured language** (`.plugin.env` `LANGUAGE`, default Vietnamese with diacritics) — see [output-language.md](../rules/output-language.md); code/identifiers stay English. Pass the resolved language into sub-agents.
+
 Goal: create a **solid plan (.md file)** describing how to implement the tests. `/qa:cook` executes it afterward. **Do NOT write code** at this step. (The name `/qa:plan-tests` distinguishes it from plan-release/plan-sprint.)
 
 > 🚦 **GATE — exploratory first, plan after**: *Automation only works when the app is correct.* A feature with `[APP-BUG]` → **do NOT make a test plan**, the deliverable is a bug report for dev. Only a **clean** exploratory leads to a plan.

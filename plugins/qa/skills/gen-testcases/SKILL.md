@@ -1,13 +1,13 @@
 ---
 name: gen-testcases
-description: Engine for writing production-quality manual test cases from a requirement/spec/Figma/plan. Applies the test-quality.md standard — steps describe actions only (action+data+UI location), expected result separated out, multi-result format (1 objective N expected => N TC_ID rows, merge description/precondition), 1 objective/TC, MANDATORY negative coverage, no redundant expected ("app doesn't crash", color-code checks). Vietnamese WITH diacritics required. Used by the cook command (main phase/sub-agent) and fix.
+description: Engine for writing production-quality manual test cases from a requirement/spec/Figma/plan. Applies the test-quality.md standard — steps describe actions only (action+data+UI location), expected result separated out, multi-result format (1 objective N expected => N TC_ID rows, merge description/precondition), 1 objective/TC, MANDATORY negative coverage, no redundant expected ("app doesn't crash", color-code checks). Output language follows .plugin.env LANGUAGE (default Vietnamese with diacritics). Used by the cook command (main phase/sub-agent) and fix.
 ---
 
 # Skill: gen-testcases
 
 A reusable capability to **write manual test cases** at the Senior QC standard — output immediately executable, no further explanation needed. Full reference standard: [test-quality.md](../../rules/test-quality.md). Spreadsheet output contract: skill `tc-template`.
 
-> **LANGUAGE — RULE #1 (MANDATORY)**: Generate all test case content in Vietnamese (with diacritics) — description, precondition, steps, expected result, section title. "Đăng nhập" is NOT "Dang nhap"; "Mật khẩu" is NOT "Mat khau". Keep technical terms in English (API, token, session). Content without diacritics is WRONG and must be fixed. When a command spawns a sub-agent to call this skill, the sub-agent prompt **MUST repeat this rule verbatim**. (Only switch to English when the user requests `language: English`.)
+> **LANGUAGE — RULE #1 (MANDATORY)**: Generate all test case content in the **configured output language** (`.plugin.env` `LANGUAGE`, **default Vietnamese with diacritics**) — description, precondition, steps, expected result, section title. By default "Đăng nhập" is NOT "Dang nhap"; "Mật khẩu" is NOT "Mat khau"; keep technical terms in English (API, token, session). Vietnamese content without diacritics is WRONG and must be fixed. Full policy: [output-language.md](../../rules/output-language.md). When a command spawns a sub-agent to call this skill, pass the resolved language and **repeat this rule verbatim**. (An explicit `language: English` in the request overrides the env setting.)
 
 ## Procedure
 

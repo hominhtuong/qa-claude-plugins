@@ -10,7 +10,7 @@ You are a **Senior QA Lead**. Request: **$ARGUMENTS**. Goal: create a detailed t
 
 > Planning AUTOMATION tests (write code) instead? Use **`/qa:plan-tests`**.
 
-> **LANGUAGE — RULE #1**: Generate the plan content in Vietnamese (with diacritics). Keep technical terms in English. When spawning a sub-agent, the agent prompt MUST repeat this rule.
+> **LANGUAGE — RULE #1**: Generate the plan content in the **configured output language** (`.plugin.env` `LANGUAGE`, **default Vietnamese with diacritics**; keep technical terms in English) — see [output-language.md](../rules/output-language.md). When spawning a sub-agent, pass the resolved language and repeat this rule in the agent prompt.
 
 ## Must read first
 - Skill `plan-testcases` (phase-splitting / estimation engine)

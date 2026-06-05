@@ -15,8 +15,10 @@ Feature to explore: **$ARGUMENTS**
 > ⚠️ **GATE** (after the full sweep): *Automation only works when the app is correct.* A feature with `[APP-BUG]` → **do NOT write tests** for that part, the deliverable is a **bug report**. Only a **clean** feature proceeds to `/qa:plan-tests`.
 > ⚠️ **Suspect the app by default**: every wrong/red observation **MUST** be triaged per [failure-triage.md](../rules/failure-triage.md): `[APP-BUG]` (app wrong — blocks tests) vs `[FRAMEWORK]` (our element capture/automation is wrong) vs `[ENV]`/`[DATA]`. Do NOT assume the app is correct.
 
+> **LANGUAGE — RULE #1**: the bug report, oracle (`analysis.md`), and all user-facing prose follow the **configured output language** (`.plugin.env` `LANGUAGE`, **default Vietnamese with diacritics**) — see [output-language.md](../rules/output-language.md). Resolve it once at Step 0 and pass the resolved language into every sub-agent prompt. Never translate a verbatim quote (error text / SQL / app string).
+
 ## Step 0 — Lock platform + feature folder (routing)
-Run **skill `detect-platform`** (argument/auto-detect/ask) → one `platform`. Read `sitemap/sitemap.json` (if it exists) to learn the path from Home.
+Run **skill `detect-platform`** (argument/auto-detect/ask) → one `platform`. Read `sitemap/sitemap.json` (if it exists) to learn the path from Home. **Resolve the output language** (`.plugin.env` `LANGUAGE`, default Vietnamese) now — it governs `analysis.md` + the bug report.
 
 **Resolve `<feature-name>`** (the output folder under `results/`): prefer the name the user typed (kebab-case, **no diacritics**, e.g. `quản lý đơn` → `quan-ly-don`); if not given, infer it from the spec/Figma title. **All outputs of this run live under `results/<feature-name>/`** — figma in `figma-tracking/`, spec docs in `docs-summary.md`, oracle in `analysis.md`, evidence in `screenshots/`, the report at the root. The only cross-feature file is the register `results/bug-summary.md`.
 
@@ -30,7 +32,7 @@ Run **skill `detect-platform`** (argument/auto-detect/ask) → one `platform`. R
 - **Local file path** (no `http` — `.md`/`.pdf`/`.docx`/`.xlsx`/`.png`/…)
 - **Pasted text** — the user describes the expected behavior inline
 
-**0.5b — Fan out reader sub-agents in parallel** (one level of orchestration; all under `results/<feature-name>/` — readers create the folder if missing). Every sub-agent prompt MUST include: *"CRITICAL: tất cả nội dung tiếng Việt PHẢI có dấu. Output không dấu là SAI."*
+**0.5b — Fan out reader sub-agents in parallel** (one level of orchestration; all under `results/<feature-name>/` — readers create the folder if missing). Every sub-agent prompt MUST state the resolved output language (default Vietnamese) and, when Vietnamese, include: *"CRITICAL: tất cả nội dung tiếng Việt PHẢI có dấu. Output không dấu là SAI."*
 - **Lark URL** → agent **`lark-reader`** (`output_file: results/<feature-name>/docs-summary.md`, `doc_index`). It reads via the Python helper (dual-mode token, auto-auth); if it reports an auth/permission error, run `/qa:auth-lark --command exploratory` to fix scopes, then retry.
 - **Figma URL** → agent **`figma-reader`** (`output_file: results/<feature-name>/figma-tracking/figma-summary.md`, `tracking_file: results/<feature-name>/figma-tracking/figma-tracking.md`, `max_screens`, `batch`). If it returns PENDING screens → spawn the next `batch` until none remain.
 - **Generic URL / local file / pasted text** → agent **`spec-reader`** (`source`, `output_file: results/<feature-name>/docs-summary.md`, `doc_index`, `feature_name`).
@@ -38,7 +40,7 @@ Run **skill `detect-platform`** (argument/auto-detect/ask) → one `platform`. R
 
 **0.5c — WAIT** for all readers → read their summaries (`results/<feature-name>/docs-summary.md`, `results/<feature-name>/figma-tracking/figma-summary.md`).
 
-**0.5d — Consolidate into the oracle** `results/<feature-name>/analysis.md` (Vietnamese, with diacritics). This is the **probe checklist** the bug-hunt runs against:
+**0.5d — Consolidate into the oracle** `results/<feature-name>/analysis.md` (in the configured output language — default Vietnamese with diacritics). This is the **probe checklist** the bug-hunt runs against:
 - **Functional requirements** to exercise (each → one probe).
 - **Business rules / formulas** (expected values to verify against on-screen figures).
 - **Validation rules** per field (valid/invalid/boundary inputs to try + expected error message).

@@ -7,6 +7,8 @@ allowed-tools: Read, Glob, Grep, Bash
 
 You are a QA Project Status Reporter. Give a quick overview of the project's current state.
 
+> **Output language**: write the summary in the **configured language** (`.plugin.env` `LANGUAGE`, default Vietnamese with diacritics) — see [output-language.md](../rules/output-language.md); raw git/CLI values stay as-is.
+
 ## Process
 
 ### Step 1: Gather Information (run in parallel)

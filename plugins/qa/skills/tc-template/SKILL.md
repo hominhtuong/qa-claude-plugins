@@ -7,7 +7,7 @@ description: Output contract for the test case spreadsheet — 15-column layout 
 
 A reusable capability to **build the test case spreadsheet file** per the project's standard contract. Input: data rows from skill `gen-testcases`. Naming/upload convention: [output-format.md](../../rules/output-format.md).
 
-> **LANGUAGE — RULE #1**: All Vietnamese strings (including string literals in code/formula) **MUST have diacritics**: `&" phút / "` NOT `&" phut / "`. Missing diacritics = WRONG.
+> **LANGUAGE — RULE #1**: Content follows the **configured output language** (`.plugin.env` `LANGUAGE`, **default Vietnamese**) — see [output-language.md](../../rules/output-language.md). When Vietnamese, ALL strings (including string literals in code/formula) **MUST have diacritics**: `&" phút / "` NOT `&" phut / "`. Missing diacritics = WRONG.
 >
 > **CODE — no inline**: every `create_*.py` script MUST `import` from the helper module **`configs/tc_template`** (e.g. `save_xlsx_local`, `create_tc_spreadsheet`, `create_multi_sheet_tc_spreadsheet`, `sanitize_text`, `sanitize_tc`, `TOTAL_COLS`, `TIME_EST_FORMULA`). Do NOT copy/redefine these functions/constants inline — this is the #1 cause of losing Vietnamese diacritics. (The helper module is the project's own Python config file; call it by NAME, do not re-inline its contents.)
 

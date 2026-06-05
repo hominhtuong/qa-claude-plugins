@@ -7,7 +7,7 @@ description: Import bugs from an exploratory report (results/<feature>/dev-bug-r
 
 Bridge **`/qa:exploratory` → Lark board**: an exploratory run already wrote a full bug report; this skill turns those bugs into board records **without re-typing them**. It does the *parse + map + pick + fill-the-gaps* work, then delegates the actual create to skill **[log-bug](../log-bug/SKILL.md)** (board config, read-only guard, duplicate check, upload, record link — all reused, never duplicated here).
 
-> **LANGUAGE — RULE #1**: the report is already Vietnamese (with diacritics) — keep it. Don't translate or strip diacritics. Don't paraphrase a symptom/verbatim error; copy it.
+> **LANGUAGE — RULE #1**: keep the source report's language as-is (default Vietnamese with diacritics — see [output-language.md](../../rules/output-language.md)). Don't translate or strip diacritics. Don't paraphrase a symptom/verbatim error; copy it.
 > **CREATE ONLY — never modify/delete a record. NEVER print a token/secret.**
 
 ## Procedure

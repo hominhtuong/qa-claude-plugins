@@ -7,7 +7,7 @@ description: Reusable logic to log a bug to a Lark Bitable board — read board 
 
 A reusable capability to **create a bug record** on Lark Bitable per the team config. Priority rules: [priority.md](../../rules/priority.md). **Severity is not used.**
 
-> **LANGUAGE — RULE #1**: Generate the Vietnamese content (Name, Steps, Actual, Expected) in Vietnamese (with diacritics). Steps must be clear and reproducible (same bar as test cases).
+> **LANGUAGE — RULE #1**: Generate the content (Name, Steps, Actual, Expected) in the **configured output language** (`.plugin.env` `LANGUAGE`, **default Vietnamese with diacritics**) — see [output-language.md](../../rules/output-language.md). Steps must be clear and reproducible (same bar as test cases).
 >
 > **CREATE ONLY — never modify/delete an existing record. NEVER print a token/secret.**
 

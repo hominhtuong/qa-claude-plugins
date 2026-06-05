@@ -2,7 +2,7 @@
 
 > **Mandatory** output format for `/exploratory` (and for the exploratory-gate of `/plan-tests`). All outputs of a run live under `results/<feature-name>/` (created at run time); the only cross-feature file is the register.
 >
-> **Output language**: the report body is written in **Vietnamese (with diacritics)** — it is a deliverable sent to the Vietnamese dev team. The instructions below are in English; the template field labels are kept in Vietnamese as they are part of the deliverable.
+> **Output language**: the report body follows the configured output language — `.claude/qa-claude/.plugin.env` `LANGUAGE`, **default Vietnamese (with diacritics)** (see [output-language.md](output-language.md)). The skeleton below uses Vietnamese field labels because that is the default deliverable; when `LANGUAGE=English`, emit the same structure with English labels (`Màn`→`Screen`, `Hiện tượng`→`Symptom`, `Root cause`, `Tác động`→`Impact`, `Kỳ vọng`→`Expectation`, `Bằng chứng`→`Evidence`). The instructions in this file stay in English regardless. **Never** translate a verbatim quote (error text / SQL / app string) — copy it exactly.
 >
 > - **Feature folder layout** under `results/<feature-name>/`: `figma-tracking/` (figma-tracking.md + figma-summary.md) · `docs-summary.md` (Lark/local/URL spec) · `analysis.md` (the oracle) · `screenshots/` · the report at the root.
 > - **Output file**: `results/<feature-name>/dev-bug-report-<ddMMMyyyy>.md` (e.g. `dev-bug-report-03Jun2026.md`). One file per run/day.
@@ -14,7 +14,7 @@
 
 ## File structure (copy this skeleton)
 
-The report body below is the Vietnamese-language deliverable; keep the Vietnamese field labels and fill them in in Vietnamese.
+The report body below is the **default Vietnamese** deliverable; fill the fields in the configured output language (default Vietnamese with diacritics — when `LANGUAGE=English`, translate the field labels and write the content in English).
 
 ```markdown
 # 🐛 Bug Report gửi Dev — <App> (exploratory <ddMMMyyyy>)

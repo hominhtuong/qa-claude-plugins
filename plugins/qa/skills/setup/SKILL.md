@@ -27,7 +27,7 @@ Prepare a project to use this plugin's config + optional integrations. All plugi
 2. **Read the doctor output**: a required tool still missing (python/node/java/mvn) → the script prints the **correct install command per OS**; hand it to the user, then re-run. Do NOT auto-install system toolchains.
 
 3. **Prompt the user to fill their files** (both git-ignored / theirs, never overwritten):
-   - `.claude/qa-claude/.plugin.env` — Lark/R2/S3/notify secrets (only the channel they enable via `ENABLE_*`).
+   - `.claude/qa-claude/.plugin.env` — Lark/R2/S3/notify secrets (only the channel they enable via `ENABLE_*`), plus behavior toggles: `HEADLESS` (web driver) and **`LANGUAGE`** (output language for reports/test cases/deliverables — default `Vietnamese`, set `English` for English output; see `rules/output-language.md`).
    - `.claude/qa-claude/log-bug.config.yml` — Lark bug board ids + `dev_pic` open_ids + defaults (for `/qa:log-bug`).
 
 ## Principles

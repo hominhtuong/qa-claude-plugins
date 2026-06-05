@@ -6,7 +6,7 @@
 > plugin's built-in `rules/test-quality.md` + `rules/output-format.md` if absent).
 
 ## Language
-- Default: **Vietnamese with diacritics** for all content (description, precondition, steps, expected, section titles). "Đăng nhập" NOT "Dang nhap". Switch with `language: English` in the request.
+- Follows the **configured output language** (`.claude/qa-claude/.plugin.env` `LANGUAGE`, **default Vietnamese with diacritics**) for all content (description, precondition, steps, expected, section titles). "Đăng nhập" NOT "Dang nhap". Set `LANGUAGE=English` (or an explicit `language: English` in the request) for English output.
 - Sanitize AI artifacts: `—` → `-`, `→` → `=>`.
 
 ## Spreadsheet columns (15 cols, A–O — rows 7-8 are the header)

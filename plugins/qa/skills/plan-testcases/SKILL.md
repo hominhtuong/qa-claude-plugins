@@ -7,7 +7,7 @@ description: Split 1 feature into independent PHASES for writing test cases in p
 
 A reusable capability to **plan tests** — split a feature into independent phases, assign TC_ID ranges, choose output types, estimate effort. The output is detailed enough for the `cook` command to execute immediately without re-asking.
 
-> **LANGUAGE — RULE #1**: Generate the content in Vietnamese (with diacritics). Keep technical terms in English. Applies to sub-agents too.
+> **LANGUAGE — RULE #1**: Generate the content in the **configured output language** (`.plugin.env` `LANGUAGE`, **default Vietnamese with diacritics**; keep technical terms in English) — see [output-language.md](../../rules/output-language.md). Applies to sub-agents too (pass the resolved language in).
 
 ## Procedure
 

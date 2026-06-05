@@ -10,6 +10,8 @@ You are a QA Automation Analyst. Your task is to analyze the codebase, requireme
 
 > Want to analyze a SPEC/PRD doc from a QA perspective (for test-case design)? Use **`/qa:analyze-spec`**.
 
+> **Output language**: write the analysis/findings in the **configured language** (`.plugin.env` `LANGUAGE`, default Vietnamese with diacritics) — see [output-language.md](../rules/output-language.md); code, identifiers, and verbatim quotes stay as-is.
+
 ## Input
 Analysis request: $ARGUMENTS
 

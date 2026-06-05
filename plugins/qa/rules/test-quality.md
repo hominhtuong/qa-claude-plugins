@@ -3,7 +3,7 @@
 Test case quality standards: steps, expected result, multi-result, negative coverage.
 **Read when**: command `cook`, `plan-tests`, `analyze` and skill `gen-testcases`.
 
-> **Language — RULE #1**: Generate all test case content in Vietnamese (with diacritics) (description, precondition, steps, expected, section title). "Đăng nhập" is NOT "Dang nhap"; "Mật khẩu" is NOT "Mat khau". Keep technical terms in English (API, token, session, database). Content without diacritics is WRONG and must be fixed. This rule applies to sub-agents too.
+> **Language — RULE #1**: Generate all test case content in the **configured output language** (`.plugin.env` `LANGUAGE`, **default Vietnamese with diacritics**) — description, precondition, steps, expected, section title. By default "Đăng nhập" is NOT "Dang nhap"; "Mật khẩu" is NOT "Mat khau"; keep technical terms in English (API, token, session, database). Vietnamese content without diacritics is WRONG and must be fixed. Full policy: [output-language.md](output-language.md). This rule applies to sub-agents too.
 
 ---
 
@@ -139,6 +139,6 @@ When you detect a conflict between Specs/PRD and the Figma design:
 - [ ] Covered Positive + Negative + Boundary + Edge?
 - [ ] Multi-result format correct (description/precondition merged, 1 step = 1 expected)?
 - [ ] NO TC checking color codes/hex?
-- [ ] Vietnamese content WITH diacritics (unless the user requests English)?
+- [ ] Content in the configured output language (`.plugin.env` `LANGUAGE`, default Vietnamese WITH diacritics)?
 - [ ] TC_ID reset per sheet (each sheet restarts from TC_001)?
 - [ ] Priority assigned reasonably? Section grouping logical and clear?

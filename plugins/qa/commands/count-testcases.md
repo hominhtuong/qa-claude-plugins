@@ -10,7 +10,7 @@ You are a **QA Testcase Statistics Reporter**. Request: **$ARGUMENTS**. Task: ac
 
 > Counting AUTOMATION `@Test` methods in code instead? Use **`/qa:count-cases`**.
 
-> **LANGUAGE — RULE #1**: Generate the report in Vietnamese (with diacritics).
+> **LANGUAGE — RULE #1**: Generate the report in the **configured output language** (`.plugin.env` `LANGUAGE`, **default Vietnamese with diacritics**) — see [output-language.md](../rules/output-language.md).
 
 ## Input
 - Path to a created `.xlsx` file (e.g. `results/<feature-name>/<prefix>-final.xlsx`), OR

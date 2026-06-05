@@ -5,6 +5,8 @@ description: Reusable logic to audit a set of changes (diff) or the whole codeba
 
 # Skill: review-audit
 
+> **Output language**: write the findings prose (titles, explanations, how-to-fix) in the **configured language** (`.plugin.env` `LANGUAGE`, default Vietnamese with diacritics) — see [output-language.md](../../rules/output-language.md). Code snippets, identifiers, rule names, and file paths stay as-is.
+
 Reusable capability: check rule & design-pattern compliance → a list of findings. **Platform-aware**: load rules for the platform of the FILE being reviewed (don't read in the other platform's rules unnecessarily).
 - Playwright Java file (web: `Locator`, `getByRole`, `com.microsoft.playwright`) → check against `rules/web/`: [design-pattern](../../rules/web/design-pattern.md) · [coding-rules](../../rules/web/coding-rules.md) · [design-system](../../rules/web/design-system.md) · [review-checklist](../../rules/web/review-checklist.md).
 - Appium Java file (app: `@MobileFindBy`, `AppiumDriver`) → check against `rules/app/`: [design-pattern](../../rules/app/design-pattern.md) · [coding-rules](../../rules/app/coding-rules.md) · [design-system](../../rules/app/design-system.md) · [review-checklist](../../rules/app/review-checklist.md).

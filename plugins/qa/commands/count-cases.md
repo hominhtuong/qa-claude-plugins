@@ -10,6 +10,8 @@ You are a QA Testcase Statistics Reporter. Your task is to count regression test
 
 > Counting test cases in a manual SHEET/plan (not code)? Use **`/qa:count-testcases`**.
 
+> **Output language**: write the report in the **configured language** (`.plugin.env` `LANGUAGE`, default Vietnamese with diacritics) — see [output-language.md](../rules/output-language.md).
+
 ## Input
 - Feature name from user: $ARGUMENTS
 - Examples: `Inventory`, `Quản lý bàn`, `Cashbook`, `Sales`, `Khuyến mại`

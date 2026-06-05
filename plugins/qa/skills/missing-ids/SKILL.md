@@ -5,6 +5,8 @@ description: Reusable logic to manage "test-id debt" — elements in a Screen th
 
 # Skill: missing-ids
 
+> **Output language**: any prose in the Missing ID Report meant for the dev (descriptions, notes) follows the **configured language** (`.plugin.env` `LANGUAGE`, default Vietnamese with diacritics) — see [output-language.md](../../rules/output-language.md). Element names, locators, screen ids, and the `suggestedTestId` stay English/technical.
+
 Reusable capability: record/list/export elements missing an `id` so QA can ask dev to add it. Why it exists: the most durable anchor is `resource-id`/`accessibilityId`; locators by text/xpath/uiautomator break easily on UI changes / i18n. Standard (static rule): coding-rules §Missing ID Report ([app](../../rules/app/coding-rules.md) · [web](../../rules/web/coding-rules.md)), the matching checklist item in review-checklist ([app](../../rules/app/review-checklist.md) · [web](../../rules/web/review-checklist.md)).
 
 ## Capability 1 — RECORD (caller invokes when declaring an element)

@@ -10,7 +10,7 @@ You are a **Senior QA Analyst**. Request: **$ARGUMENTS**. The output is a struct
 
 > Analyzing CODE / test results (automation) instead? Use **`/qa:analyze`**.
 
-> **LANGUAGE — RULE #1**: Generate the analysis content in Vietnamese (with diacritics). Keep technical terms in English. Every sub-agent prompt MUST repeat this rule.
+> **LANGUAGE — RULE #1**: Generate the analysis content in the **configured output language** (`.plugin.env` `LANGUAGE`, **default Vietnamese with diacritics**; keep technical terms in English) — see [output-language.md](../rules/output-language.md). Pass the resolved language into every sub-agent prompt and repeat this rule.
 > **READ-ONLY**: this command ONLY analyzes; it does NOT modify source code/files.
 
 ## Must read first
