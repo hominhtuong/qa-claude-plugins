@@ -88,6 +88,8 @@ def run(fix: bool = False) -> int:
         else:
             print("[fix] wrangler install failed — install manually: npm install -g wrangler")
 
+    _check_tls()
+
     if missing_required:
         print("\nMissing required tools — install them, then re-run the doctor:")
         for name, hint in missing_required:
@@ -95,6 +97,45 @@ def run(fix: bool = False) -> int:
         return 1
     print("\nAll required tools present ✅")
     return 0
+
+
+def _check_tls() -> None:
+    """Probe HTTPS to Lark; if a corporate self-signed proxy blocks it, point to the fix.
+
+    Non-fatal — only Lark features need it. Surfaces the SSL_CERT_FILE remedy here so a
+    proxy environment is caught at setup time, not mid-`/qa:analyze-spec`.
+    """
+    import os
+    import ssl
+    import urllib.error
+    import urllib.request
+    host = "https://open.larksuite.com/open-apis/auth/v3/tenant_access_token/internal"
+    try:
+        try:
+            import truststore  # use the OS trust store if available
+            ctx = truststore.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+        except Exception:
+            ctx = ssl.create_default_context()
+        req = urllib.request.Request(host, data=b"{}", method="POST",
+                                     headers={"Content-Type": "application/json"})
+        urllib.request.urlopen(req, timeout=15, context=ctx).read()
+        print("· [ok]   TLS       can reach Lark over HTTPS")
+    except urllib.error.HTTPError:
+        # Got an HTTP response (e.g. 400 to the empty body) → the TLS handshake succeeded.
+        print("· [ok]   TLS       can reach Lark over HTTPS")
+    except Exception as e:  # noqa: BLE001
+        msg = str(getattr(e, "reason", e))
+        up = msg.upper()
+        if ("CERTIFICATE_VERIFY_FAILED" in up or "SELF-SIGNED CERTIFICATE" in up
+                or "SELF SIGNED CERTIFICATE" in up or "UNABLE TO GET LOCAL ISSUER" in up):
+            have = "set" if os.environ.get("SSL_CERT_FILE") else "NOT set"
+            print(f"· [warn] TLS       self-signed/corporate CA blocks Lark (SSL_CERT_FILE {have}).")
+            print("           Fix: install a CA bundle and set SSL_CERT_FILE in "
+                  ".claude/qa-claude/.plugin.env, or `pip install truststore`.")
+            print("           macOS: pip install certifi; CERT=\"$(python3 -m certifi)\"; "
+                  "security find-certificate -a -p /Library/Keychains/System.keychain >> \"$CERT\"; "
+                  "set SSL_CERT_FILE=$CERT")
+        # any other error (offline/DNS) is unrelated to the toolchain → stay quiet
 
 
 if __name__ == "__main__":

@@ -27,9 +27,9 @@ import re
 import sys
 from urllib.parse import urlparse
 
-from _env import env_str, load_env
-from lark_auth import (DEFAULT_DOMAIN, _api, _classify, available_modes,
-                       get_read_token, other_mode)
+from _env import env_str, load_env, ssl_help_text
+from lark_auth import (DEFAULT_DOMAIN, _api, _classify, _no_creds_error, available_modes,
+                       diagnose_error, get_read_token, other_mode)
 
 # --- token (dual-mode: tenant app token or user OAuth token, with fallback) ---
 #
@@ -67,7 +67,8 @@ def read_document(domain: str, token: str, kind: str, doc_token: str,
         st, jb = _api("GET", f"{domain}/open-apis/wiki/v2/spaces/get_node?token={doc_token}", token)
         node = (jb.get("data") or {}).get("node") or {}
         if not node:
-            return 4, {"ok": False, "error": f"cannot resolve wiki node ({jb.get('msg') or st})",
+            why = jb.get("_error") or jb.get("msg") or st  # keep raw text (SSL/scope) for diagnosis
+            return 4, {"ok": False, "error": f"cannot resolve wiki node ({why})",
                        "denied": _classify(st, jb) == "denied"}
         obj_token = node.get("obj_token", doc_token)
         obj_type = node.get("obj_type", "docx")
@@ -81,9 +82,10 @@ def read_document(domain: str, token: str, kind: str, doc_token: str,
 
     # plain text (reliable)
     st, jb = _api("GET", f"{domain}/open-apis/docx/v1/documents/{obj_token}/raw_content", token)
-    if jb.get("code") not in (0, None) or st >= 400:
-        return 4, {"ok": False, "error": f"raw_content failed: {jb.get('msg') or st} "
-                   f"(code={jb.get('code')})", "denied": _classify(st, jb) == "denied"}
+    if jb.get("_error") or jb.get("code") not in (0, None) or st >= 400:
+        why = jb.get("_error") or jb.get("msg") or st  # keep raw text (SSL/scope) for diagnosis
+        return 4, {"ok": False, "error": f"raw_content failed: {why} (code={jb.get('code')})",
+                   "denied": _classify(st, jb) == "denied"}
     text = (jb.get("data") or {}).get("content", "")
     if not title:
         title = (text.splitlines()[0].strip() if text.strip() else obj_token)
@@ -197,9 +199,8 @@ def main(argv=None):
     domain = env_str("LARK_DOMAIN", DEFAULT_DOMAIN).rstrip("/")
     avail = available_modes()
     if not avail["tenant"] and not avail["user"]:
-        print(json.dumps({"ok": False, "error": "No Lark credentials configured — run "
-                          "/qa:setup then /qa:auth-lark (tenant) and/or "
-                          "/qa:auth-lark --login (user)."}, ensure_ascii=False))
+        # Same tailored placeholder/disabled/empty message + error_code the auth check uses.
+        print(json.dumps(_no_creds_error(), ensure_ascii=False, indent=2))
         return 2
 
     kind, doc_token = parse_url(args.url)
@@ -215,6 +216,14 @@ def main(argv=None):
             if res2.get("ok"):
                 res2["fallback_from"] = mode_used
                 code, res = code2, res2
+
+    # Map every remaining failure to a stable error_code + single next action so the
+    # lark-reader agent / analyze-spec can propose the exact fix (no guessing).
+    if not res.get("ok") and "error_code" not in res:
+        ecode, action = diagnose_error(res.get("error", ""))
+        res["error_code"], res["action"] = ecode, action
+        if ecode == "SSL_CERT":
+            res["ssl_help"] = ssl_help_text()
 
     res.setdefault("source_url", args.url)
     print(json.dumps(res, indent=2, ensure_ascii=False))

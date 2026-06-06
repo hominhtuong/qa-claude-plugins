@@ -1,6 +1,6 @@
 ---
 description: Authenticate Lark (Feishu) in BOTH token modes and verify permissions — tenant (app token from LARK_APP_ID/LARK_APP_SECRET) and/or user (UAT via OAuth login). Probes what each mode can do (Bitable / Drive / Docs), resolves the effective read mode (preference auto|tenant|user; auto picks the mode with more granted read scopes, tie→tenant), writes structured lark info to lark-auth.state.json + env, and reports any conflict with what a command needs. You (Claude) run scripts/lark_auth.py yourself; the user runs no terminal command.
-argument-hint: [--command plan-tests|exploratory|log-bug|update-board] [--mode auto|tenant|user] [--login [--code <CODE>]] [--request full|<caps>] [--json]
+argument-hint: [--command plan-tests|exploratory|analyze-spec|log-bug|update-board] [--mode auto|tenant|user] [--login [--code <CODE>]] [--probe-doc <url>] [--request full|<caps>] [--json]
 allowed-tools: Bash, Read, Edit
 ---
 
@@ -33,15 +33,29 @@ Set the default mode with `--mode auto|tenant|user` (persisted). `auto` (recomme
 
 ## Step 2 — Interpret the exit code & report
 - **exit 0** → authenticated; print the per-mode capability table + the resolved `read_mode`. If `--command` was given and all required caps are available, say it's ready.
-- **exit 2** → no/invalid credentials in ANY mode. Tell the user to open **`.claude/qa-claude/.plugin.env`**, set `ENABLE_LARK_APP=true` + `LARK_APP_ID`/`LARK_APP_SECRET` (tenant), and/or run `/qa:auth-lark --login` (user), then re-run.
-- **exit 3** → permission conflict: missing a scope in ALL modes. Relay each missing capability + the **exact scope to grant** — tenant: Developer Console → Permissions & Scopes → re-publish; user: add to `LARK_USER_SCOPE` → re-login. Then re-run.
+- **exit 2** → no/invalid credentials, OR a transport failure (SSL/network). The JSON/human output carries a stable **`error_code`** + a one-line **`action`** — relay that verbatim (see the table below). Common: `CREDS_PLACEHOLDER` (still `cli_xxx`/`your_app_secret`), `APP_DISABLED` (`ENABLE_LARK_APP=false`), `SSL_CERT` (corporate self-signed proxy — the output already prints the exact `SSL_CERT_FILE` fix), `REDIRECT_MISMATCH` (20029).
+- **exit 3** → permission conflict: a required read scope is **denied** in ALL modes (now actually tested, not assumed). Relay each missing capability + the **exact scope to grant** — tenant: Developer Console → Permissions & Scopes → re-publish; user: add to `LARK_USER_SCOPE` → re-login. Then re-run.
+
+### Error codes → single next action (relay these, don't re-derive)
+| `error_code` | Meaning | One-step fix to relay |
+|---|---|---|
+| `CREDS_PLACEHOLDER` | App id/secret still the template placeholder | Fill real `LARK_APP_ID`/`LARK_APP_SECRET` + `ENABLE_LARK_APP=true` (Developer Console → Credentials) |
+| `APP_DISABLED` | Creds look real but `ENABLE_LARK_APP=false` | Set `ENABLE_LARK_APP=true` |
+| `SSL_CERT` | TLS trust failure (corporate self-signed CA) | Set `SSL_CERT_FILE` to a CA bundle (output prints the command) or `pip install truststore` |
+| `REDIRECT_MISMATCH` | OAuth 20029 — redirect not registered | Set `LARK_REDIRECT_URI` to a URL registered in the app console |
+| `INVALID_PARAM` | Lark 10003 (usually bad creds) | Re-check `LARK_APP_ID`/`LARK_APP_SECRET` |
+| `SCOPE_DENIED` | Token lacks a required scope | Grant the scope (console → publish) or add to `LARK_USER_SCOPE` + re-login |
+| `DOC_DENIED` | Doc not shared with app/user | Share the doc, or `--login` to use the user token |
+
+### Verifying read scopes against a real doc (recommended)
+Read scopes (`wiki.read`/`docx.read`/`drive.read`) are now **probed for real** — a missing scope shows as `❌ denied` immediately, never an optimistic "declared". To test against the exact document the user needs (cleanest signal), pass `--probe-doc <wiki_or_docx_url>` (or set `LARK_PROBE_DOC` in `.plugin.env`). Without it, a throwaway token still surfaces a missing scope.
 
 ## Capabilities & how they map to commands
 - `bitable.read` (`bitable:app:readonly`) · `bitable.write` (`bitable:app`) → **/qa:log-bug**, **/qa:update-board**
 - `drive.read` (`drive:drive:readonly`) · `drive.upload` (`drive:drive`) → log-bug attachment + doc readers
 - `docx.read` (`docx:document:readonly`) · `wiki.read` (`wiki:wiki:readonly`) → **/qa:plan-tests**, **/qa:exploratory**, **/qa:analyze-spec** Lark doc reading
 
-Status legend the script prints: ✅granted ❌denied 📜declared (write/upload — can't be probed non-destructively, trusted from the scope grant) ❔unknown ➖skipped (no resource to probe, e.g. board id not filled yet).
+Status legend the script prints: ✅granted (read scopes are **actually tested** with a harmless GET) ❌denied 📜declared (only `bitable.write`/`drive.upload` — a write can't be probed non-destructively) ❔unknown ➖skipped (no resource to probe, e.g. board id not filled yet).
 
 ## Principles
 - **Default = request FULL** — verify every capability unless `--request` narrows it.

@@ -28,6 +28,8 @@ Prepare a project to use this plugin's config + optional integrations. All plugi
 
 3. **Prompt the user to fill their files** (both git-ignored / theirs, never overwritten):
    - `.claude/qa-claude/.plugin.env` — Lark/R2/S3/notify secrets (only the channel they enable via `ENABLE_*`), plus behavior toggles: `HEADLESS` (web driver) and **`LANGUAGE`** (output language for reports/test cases/deliverables — default `Vietnamese`, set `English` for English output; see `rules/output-language.md`).
+     - **Lark app**: to read docs / use Bitable, set `ENABLE_LARK_APP=true` AND real `LARK_APP_ID`/`LARK_APP_SECRET` (the `cli_xxx`/`your_app_secret` placeholders are rejected with a clear message), then run `/qa:auth-lark` — it now **tests read scopes for real** (a missing `wiki:wiki`/`docx:document:readonly` shows up immediately).
+     - **Behind a corporate proxy?** If Lark calls fail with `CERTIFICATE_VERIFY_FAILED`, set `SSL_CERT_FILE` to a CA bundle (the error prints the exact command) or `pip install truststore`. `/qa:doctor` flags this too.
    - `.claude/qa-claude/log-bug.config.yml` — Lark bug board ids + `dev_pic` open_ids + defaults (for `/qa:log-bug`).
 
 ## Principles
