@@ -1,0 +1,34 @@
+# Staging config — TEMPLATE (committed). Copy to configs/staging.properties (git-ignored) and fill.
+# Precedence: -D system property > OS env var > .env > configs/staging.properties.
+# Real secrets (LOGIN_*) live in .env, NOT here.
+
+# Appium server
+appium.url=http://127.0.0.1:4723/
+
+# Platform & device
+platform=android                 # android | ios
+device.name=emulator-5554
+# Android app under test
+app.package=
+app.activity=
+# iOS (when platform=ios)
+# udid=
+# bundle.id=
+
+# Capabilities
+automation.name.android=UiAutomator2
+automation.name.ios=XCUITest
+no.reset=true                    # keep app data between sessions (faster GoToHome)
+full.reset=false
+
+# Timeouts (milliseconds)
+timeout.default=30000
+timeout.element=15000
+
+# Flaky guard: retry a failed test this many times (0 = off).
+test.retry.count=2
+
+# Artifacts
+screenshot.on.failure=true
+screenshot.on.success=true
+results.dir=results

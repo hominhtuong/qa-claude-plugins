@@ -1,0 +1,23 @@
+# Production environment config — TEMPLATE (committed). Copy to configs/production.properties (git-ignored).
+# Production is typically READ-ONLY: run smoke / login only; never mutate live data.
+# Precedence: -D system property > OS env var > .env > configs/production.properties.
+
+base.url=__BASE_URL__
+id.url=__ID_URL__
+home.path=__HOME_PATH__
+
+browser=chromium
+headless=true
+slowmo=0
+
+timeout.default=30000
+timeout.navigation=45000
+timeout.element=15000
+
+test.retry.count=1
+
+trace=on-failure
+video=off
+screenshot.on.failure=true
+screenshot.on.success=true
+results.dir=results

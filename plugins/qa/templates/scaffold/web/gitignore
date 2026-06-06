@@ -1,0 +1,37 @@
+# qa-scaffold — generated project ignores
+
+# Maven
+target/
+
+# Secrets / local env — NEVER commit real credentials
+.env
+.env.local
+configs/*.local.properties
+configs/staging.properties
+configs/production.properties
+
+# Generated run artifacts (report + screenshots/traces/videos per run)
+results/reports/
+results/**/screenshots/
+results/**/videos/
+results/**/traces/
+test-output/
+
+# Playwright MCP / browser artifacts
+.playwright-mcp/
+
+# Generated sitemap aggregate (rebuilt from sitemap/screens/*.json — those ARE committed)
+sitemap/sitemap.json
+
+# IDE / OS
+.idea/
+*.iml
+.vscode/
+.DS_Store
+Thumbs.db
+*.log
+
+# qa-claude plugin
+.claude/qa-claude/.plugin.env
+.qa-venv/
+results/tests/

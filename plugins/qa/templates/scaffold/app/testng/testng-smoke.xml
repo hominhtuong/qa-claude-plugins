@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
+<!--
+  SMOKE (critical path). GoToHomeTest first, then the smoke subset. One Appium session reused.
+  Run: mvn test -DsuiteXmlFile=testng/testng-smoke.xml
+-->
+<suite name="Smoke" verbose="1" thread-count="1">
+    <listeners>
+        <listener class-name="__PKG__.tests.base.RetryListener"/>
+    </listeners>
+
+    <test name="0 - GoToHome (precondition)">
+        <classes>
+            <class name="__PKG__.tests.auth.GoToHomeTest"/>
+        </classes>
+    </test>
+
+    <test name="Smoke - all features">
+        <groups>
+            <run>
+                <include name="smoke"/>
+            </run>
+        </groups>
+        <packages>
+            <package name="__PKG__.smoke.*"/>
+        </packages>
+    </test>
+</suite>

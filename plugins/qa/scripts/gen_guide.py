@@ -22,7 +22,7 @@ GUIDE_NAME = "README.md"                                   # lives in .claude/qa
 # is ever silently dropped.
 GROUPS = [
     ("🚀 Bắt đầu & trợ giúp", [
-        "setup", "help", "ask", "status", "feedback",
+        "scaffold", "setup", "help", "ask", "status", "feedback",
     ]),
     ("🤖 Kiểm thử tự động — Automation (Playwright Web / Appium iOS·Android)", [
         "exploratory", "plan-tests", "find-elements", "cook", "run", "fix",
@@ -30,7 +30,11 @@ GROUPS = [
     ]),
     ("✍️ Kiểm thử thủ công — Manual QA (test case + bug board)", [
         "analyze-spec", "plan-gen-testcases", "gen-testcases", "count-testcases",
-        "log-bug", "update-board",
+        "est-sp", "explain-bug", "check-duplicate-bug", "log-bug", "update-board",
+    ]),
+    ("📊 Quản lý chất lượng & báo cáo — QA Manager / Product Ops", [
+        "quality-report", "bug-analysis", "release-gate", "traceability", "release-notes",
+        "risk", "triage", "sla", "postmortem",
     ]),
     ("🔍 Review & tích hợp code", [
         "review-change", "review-codebase", "push-code", "merge-request",
@@ -105,6 +109,7 @@ def build() -> str:
     lines.append("")
     lines.append("- **Automation (viết code test):** `exploratory` → `plan-tests` → `cook` → `run` → `fix` → `review-change` → `push-code` → `merge-request`")
     lines.append("- **Manual QA (viết test case):** `analyze-spec` → `plan-gen-testcases` → `gen-testcases` → `log-bug`")
+    lines.append("- **Quản lý & báo cáo (QA Manager / Product Ops):** `traceability` (phủ spec↔test↔bug) · `quality-report` (dashboard metrics) · `risk` (ma trận rủi ro) · `triage` (RICE) · `sla` (compliance) → `release-gate` (Go/No-Go) → `release-notes` (changelog nội bộ + bản cho người dùng)")
     lines.append("")
     lines.append("> Lưu ý: hai luồng dùng **tên lệnh khác nhau** — `cook` (viết code) vs `gen-testcases` (viết test case); "
                  "`plan-tests` vs `plan-gen-testcases`; `analyze` vs `analyze-spec`; `count-cases` vs `count-testcases`.")

@@ -2,7 +2,7 @@
 
 🌐 [Tiếng Việt](README.md) · **English**
 
-> **An open-source Claude Code plugin for every QA/QC engineer using AI.** Automate web & mobile testing, generate test cases from documents, run exploratory testing, review code — turning Claude Code into a real "QA engineer" right inside your terminal/IDE.
+> **An open-source Claude Code plugin for QA/QC engineers, QA Managers and Product Ops using AI.** Automate web & mobile testing, generate test cases from documents, run exploratory testing, review code — and roll it all up into quality dashboards, Go/No-Go release gates, traceability matrices and release notes. Turns Claude Code into a real "QA engineer" *and* a "quality manager" right inside your terminal/IDE.
 
 Free & open to **everyone**. Install once, use across every project that has Claude. All commands are called as **`/qa:<name>`** (e.g. `/qa:exploratory`).
 
@@ -10,11 +10,13 @@ Free & open to **everyone**. Install once, use across every project that has Cla
 
 - [Features](#features)
 - [Installation](#installation)
+- [Quickstart workflow](#quickstart-workflow--from-zero-to-your-first-project)
 - [Updating](#updating)
 - [Command list](#command-list)
   - [Shared](#shared)
   - [Automation](#automation)
   - [Manual QA](#manual-qa)
+  - [Quality management & reporting](#quality-management--reporting-qa-manager--product-ops)
 - [How it works](#how-it-works)
 - [Optional integrations](#optional-integrations)
 - [Contributing](#contributing)
@@ -23,6 +25,7 @@ Free & open to **everyone**. Install once, use across every project that has Cla
 
 - **Multi-platform automation** — Web (Playwright) + App (Appium iOS/Android): explore & hunt bugs, write Page Objects + tests, run & triage failures, fix the right layer, review → push → open a PR/MR.
 - **Manual QA** — analyze specs/PRDs, plan test cases, generate test cases to **xlsx / Google / Lark Sheet**, log bugs to **Lark Bitable**.
+- **Quality management & reporting** (QA Manager / Product Ops) — roll up the bug board + test results into a **metrics dashboard**, an auditable **Go/No-Go release gate**, a **requirement traceability matrix**, and **release notes** (internal changelog + user-facing). Read-only.
 - **Auto-routing by platform** (web / android / ios) → reads only the matching platform skill → no wasted tokens.
 - **Optional integrations** — result notifications (Lark / Slack / Teams / Telegram) & report sharing (Cloudflare R2 / S3), using **your own** accounts, toggle freely.
 - **Cross-platform** — Windows + macOS.
@@ -32,7 +35,11 @@ Free & open to **everyone**. Install once, use across every project that has Cla
 ```bash
 /plugin marketplace add hominhtuong/qa-claude-plugins
 /plugin install qa@qa-claude
+/reload-plugins
+/qa:setup        # ← run once right after install: scaffolds .claude/qa-claude/ + checks the toolchain
 ```
+
+> **After installing (or reloading) the plugin, run `/qa:setup` once per project.** It creates `.claude/qa-claude/` (config + `.plugin.env`), patches `.gitignore`, and checks the toolchain — no terminal needed. Then open `.claude/qa-claude/.plugin.env` to enable what you want. Details in [Optional integrations](#optional-integrations).
 
 Or declare it in the project (so anyone who clones it is prompted to install) — `.claude/settings.json`:
 
@@ -47,6 +54,20 @@ Or declare it in the project (so anyone who clones it is prompted to install) �
 
 > You can still add your own commands in the project's `.claude/commands/` (invoked **without a prefix**, e.g. `/mycmd`) — they run independently alongside the plugin's `/qa:…` commands.
 
+## Quickstart workflow — from zero to your first project
+
+New here? This is the whole path, in order. You type commands in Claude Code — **no terminal, no framework knowledge needed.**
+
+1. **Open the project in VS Code** and install Claude Code, then install this plugin (the two `/plugin …` lines above) and run `/reload-plugins`.
+2. **Create the test project skeleton** — `/qa:scaffold`. Pick **app** or **web**; it generates a standard Page Object Model framework (folders, `pom.xml`, `Makefile`, suites, an example *login* test) that already compiles. *You now have a real project — the structure shows you where things go.*
+3. **Set up the plugin** — `/qa:setup` (creates `.claude/qa-claude/`, checks the toolchain).
+4. **Fill your account** — open `.env` and put in the test login (and the app/web URL if asked).
+5. **Try the example** — `/qa:run` (or `make smoke`): one browser/app session opens, runs the login case start-to-finish, then closes and produces an HTML report under `results/`.
+6. **Add your own feature** — `/qa:plan-tests <feature>` → `/qa:cook` → `/qa:run`. Repeat per feature. (Prefer manual test cases instead of code? `/qa:analyze-spec` → `/qa:plan-gen-testcases` → `/qa:gen-testcases`.)
+7. **Hunt bugs / log them** — `/qa:exploratory <feature>` finds bugs; `/qa:log-bug` records them to your board.
+
+> That's it: **scaffold → setup → fill `.env` → run → plan-tests/cook.** A few cases later you have a working test project. For team leads, see [Quality management & reporting](#quality-management--reporting-qa-manager--product-ops).
+
 ## Updating
 
 When a new version is out:
@@ -56,7 +77,7 @@ When a new version is out:
 /reload-plugins
 ```
 
-Run `/qa:setup-plugin --update` to refresh the `.example`/template files in `.claude/qa-claude/` (your `.env` and `log-bug.config.yml` are **never overwritten**).
+Run `/qa:setup --update` to refresh the `.example`/template files in `.claude/qa-claude/` (your `.env` and `log-bug.config.yml` are **never overwritten**).
 
 ## MCP servers (auto-registered when the plugin is enabled)
 
@@ -79,7 +100,8 @@ The plugin **bundles** the MCP servers automation needs — enabling the plugin 
 
 | Command | What it does |
 |---|---|
-| `/qa:setup-plugin` | **Set up the plugin in a project** (once): Claude runs the script to create `.claude/qa-claude/` + check the toolchain. No terminal needed. |
+| `/qa:scaffold [--app\|--web]` | **Create a standard automation project** from scratch (POM framework: folders + pom/Makefile/suites/configs + an example login test that compiles). Run once on an empty repo; then just `/qa:plan-tests`. Never overwrites existing code. |
+| `/qa:setup` | **Set up the plugin in a project** (once): Claude runs the script to create `.claude/qa-claude/` + check the toolchain. No terminal needed. |
 | `/qa:help [topic]` | Introduce & guide usage of the plugin, list commands/skills. |
 | `/qa:status` | Quick overview of the project state (git, devices, Appium, coverage). |
 | `/qa:ask <question>` | Q&A about the codebase / architecture / config / testing approach (answer only). |
@@ -115,8 +137,30 @@ The plugin **bundles** the MCP servers automation needs — enabling the plugin 
 | `/qa:plan-gen-testcases <feature>` | Build a multi-phase test-case plan (scope, screens, TC_ID range). |
 | `/qa:gen-testcases <plan>` | Generate test cases to **xlsx / Google / Lark Sheet** (localized output supported). |
 | `/qa:count-testcases <file\|sheet>` | Count test cases in a sheet/plan + report coverage per section. |
+| `/qa:est-sp <plan\|feature>` | Estimate **Story Points** for QC effort (TCs + execute + retest), factored by role (`USER_ROLE`); outputs the SP table, updates the plan in plan mode. |
+| `/qa:explain-bug <Bug ID\|text\|link>` | "Translate" a messy bug into a clear summary (repro/actual/expected + Severity/Priority sanity check); reads the record + comments by Bug ID or full Lark link. |
+| `/qa:check-duplicate-bug <description>` | Check the board for a duplicate **before** logging (keyword search, drops closed + false positives) — decision only, never creates. |
 | `/qa:log-bug <description>` | Log a bug to Lark Bitable (with image/video, scores Priority). |
 | `/qa:update-board <url\|alias>` | Add/switch the active Lark board + refresh mappings. |
+| `/qa:auth-lark` | Authenticate your Lark app + probe which scopes/read-mode it has (run once before the Lark doc/board commands). |
+
+### Quality management & reporting (QA Manager / Product Ops)
+
+> **Read-only** — these commands aggregate artifacts QA already produced (`results/` + the Lark bug board) into decision-grade documents for leads, managers and product ops. They never create/edit bugs or tests.
+
+| Command | What it does |
+|---|---|
+| `/qa:quality-report [from..to\|tag]` | **QA dashboard** for managers: pass rate + trend, open bugs by priority with aging, defect density / hot-spot modules, created-vs-resolved trend, coverage per feature → `results/quality-report/` (md, optional HTML/notify). |
+| `/qa:bug-analysis <board url> [range]` | **Deep board analysis** of any board over a range: adaptively classifies that board's own status names into not-ready-to-test / ready / closed, then breaks down the not-ready backlog by group/type/feature/priority + **root causes** + **spike days** + aging → `results/bug-analysis/`. |
+| `/qa:release-gate <release>` | **Go / No-Go** verdict against an auditable checklist (`release-gate.config.yml`): hard gates → NO-GO, soft gates → CONDITIONAL (ship with sign-off). Writes verdict + per-gate table + blockers + sign-off block. |
+| `/qa:traceability <feature\|all>` | **Requirement Traceability Matrix**: link each requirement (from `/qa:analyze-spec`) → test cases → bugs, flag Gap / No-test / Partial / Covered. Closes the spec↔test↔bug loop. |
+| `/qa:release-notes <release>` | **Release notes for two audiences**: an internal technical changelog (Conventional-Commit grouped + fixed-bug table) + a user-facing notes doc (plain language, benefit-led) from git history + fixed bugs. |
+| `/qa:risk <feature\|release>` | **Risk assessment**: a Risk Matrix (Likelihood × Impact, 1–25) classified Low/Medium/High/Critical, with prevention/detection/response/owner mitigation per Medium+ risk and a risk-based test strategy. |
+| `/qa:triage <bug list>` | **Bug triage**: classify Severity + Type, score by **RICE** for an objective processing order, derive SLA deadlines + regression scope, emit an action plan. Reads a sheet/file/list or the board. |
+| `/qa:sla <ticket data>` | **SLA compliance** report: compliance rate (overall + per priority), MTTR-Response/Resolution with P50/P90/P95, breach analysis, trend, assignee performance. |
+| `/qa:postmortem <incident>` | **Blameless postmortem**: timeline + root-cause (5 Whys + technical/process factors) + impact + action items (Prevent/Detect/Mitigate, owner role, due). Grounds the timeline in related board records. |
+
+> Shared frameworks for these: [product-ops.md](plugins/qa/rules/product-ops.md) (SLA / health / release gates / RICE / risk matrix), [severity-priority-framework.md](plugins/qa/rules/severity-priority-framework.md), [story-point.md](plugins/qa/rules/story-point.md).
 
 ### Output
 
@@ -127,6 +171,7 @@ All output is gathered under the **`results/`** folder in the project:
 | Exploratory (spec analysis + figma-tracking + bug report + screenshots) | `results/<feature-name>/` (shared register: `results/bug-summary.md`) |
 | Each test run (HTML report + screenshots/videos) | `results/tests/<ddMMMyyyy>/…` |
 | Test cases (xlsx) + analysis + html testcase report | `results/<feature-name>/` |
+| Quality & ops reports (dashboard / release gate / traceability / release notes / risk / triage / SLA / bug analysis) | `results/quality-report/`, `results/release-gate/<release>/`, `results/release-notes/<release>/`, `results/bug-analysis/`, `results/<context>/` (risk/triage/sla/traceability) |
 
 `results/tests/` (per-run artifacts) is automatically added to `.gitignore` when you run `setup`.
 
@@ -157,7 +202,7 @@ Everyone uses **their own** account. All plugin config lives in `<project>/.clau
 **Set up once / project** — just type:
 
 ```text
-/qa:setup-plugin
+/qa:setup
 ```
 
 Claude runs the script (auto-detects macOS/Windows), creates `.claude/qa-claude/`, patches `.gitignore`, and checks the toolchain (auto-installs `wrangler` if `npm` is present; otherwise prints the OS-specific install command). You **don't need a terminal**. Then open `.claude/qa-claude/.env` to enable what you want (and `log-bug.config.yml` for `/qa:log-bug`).

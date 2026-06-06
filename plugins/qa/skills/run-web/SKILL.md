@@ -31,4 +31,6 @@ Only runs when the project has a `.claude/qa-claude/.plugin.env` (created by the
 
 Every script **no-ops itself** when its flag is off / config is missing → does not break the run. Missing `wrangler`/`aws`/`python` → run the `doctor` skill.
 
-> Do NOT fix test code — just run & triage. The browser is opened by `PlaywrightFactory` as **one shared window for the whole run** (serial); `make` already selects the `*-serial.xml` suite.
+> Do NOT fix test code — just run & triage. The browser is opened by `PlaywrightFactory` as **one shared window for the whole run** (serial): launched once in `BaseTest` `@BeforeSuite`, closed once in `@AfterSuite` **after every case is done**, and the report is flushed at suite finish → so upload/notify above runs once per run, not per case. `make` already selects the `*-serial.xml` suite (single JVM, `thread-count=1`).
+>
+> **If the browser opens/closes after every case (flicker):** the lifecycle is wrong — a `[FRAMEWORK]` issue, route to `/qa:fix`. Causes: browser launched/closed at `@BeforeMethod`/`@AfterMethod` instead of `@BeforeSuite`/`@AfterSuite`, or the run was split into many JVMs / parallel workers (each spawns its own browser). Prefer `make smoke`/`make regression` (one suite) over per-method `mvn` loops, and keep `thread-count=1`. Spec: [design-pattern.md](../../rules/web/design-pattern.md) §7.

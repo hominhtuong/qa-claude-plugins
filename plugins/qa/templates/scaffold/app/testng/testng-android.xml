@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
+<!--
+  ANDROID regression. The FIRST <test> block is always GoToHomeTest (handles Onboarding + Login
+  so every later test starts from Home). One Appium session is reused across the run; recoverToHome
+  brings the app back Home between tests (no reinstall/relaunch per case). Run: mvn test -DsuiteXmlFile=testng/testng-android.xml
+-->
+<suite name="Android - Regression" verbose="1" thread-count="1">
+    <listeners>
+        <listener class-name="__PKG__.tests.base.RetryListener"/>
+    </listeners>
+
+    <test name="0 - GoToHome (precondition)">
+        <classes>
+            <class name="__PKG__.tests.auth.GoToHomeTest"/>
+        </classes>
+    </test>
+
+    <test name="Regression - all features">
+        <groups>
+            <run>
+                <include name="regression"/>
+            </run>
+        </groups>
+        <packages>
+            <package name="__PKG__.regression.*"/>
+        </packages>
+    </test>
+</suite>

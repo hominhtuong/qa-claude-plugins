@@ -1,0 +1,36 @@
+# ─────────────────────────────────────────────────────────────
+# qa-claude — release-gate criteria. EDIT this to match YOUR Go/No-Go policy.
+# Installed by the `setup` skill at  <project>/.claude/qa-claude/release-gate.config.yml
+# ✅ This is YOUR copy — `setup` NEVER overwrites it. The latest schema is refreshed
+#    to `release-gate.config.example.yml` on each setup run (diff it after an update).
+# Read by /qa:release-gate to score a release GO / NO-GO / CONDITIONAL. No secrets here —
+# the bug board + creds come from log-bug.config.yml + .plugin.env.
+# ─────────────────────────────────────────────────────────────
+
+# Hard gates — ANY failing => NO-GO (blocker). Set a number, or null to disable a gate.
+hard:
+  max_open_critical: 0       # open Critical-priority bugs allowed (0 = none)
+  max_open_high: 0           # open High-priority bugs allowed
+  min_pass_rate: 90          # minimum latest-run automation pass rate (%) ; set null if you have NO automation suite (manual-only team) — else the gate is auto-skipped as N/A, not a blocker
+  min_coverage: null         # minimum coverage % (needs testcase data) ; null to skip
+
+# Soft gates — failing => CONDITIONAL (ship with sign-off + noted risk), not an auto-block.
+soft:
+  max_open_medium: 5         # open Medium bugs tolerated before flagging
+  max_critical_age_days: 7   # any open Critical older than this => flag
+  require_no_growing_backlog: true   # created > resolved this period => flag
+
+# Which bug statuses count as CLOSED (everything else = open). Match your board's option text.
+closed_statuses: ["Done", "Closed", "Resolved", "Verified", "Rejected", "Won't fix"]
+
+# Sign-off roster shown in the gate report (names only — informational).
+sign_off:
+  - role: "QA Lead"
+    name: ""
+  - role: "Product Owner"
+    name: ""
+  - role: "Eng Lead"
+    name: ""
+
+# Notify the configured channel when a gate verdict is produced (uses the plugin notify toggles).
+notify_on_verdict: false

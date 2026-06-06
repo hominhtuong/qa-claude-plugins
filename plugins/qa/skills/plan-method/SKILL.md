@@ -22,6 +22,7 @@ Reusable capability: from a feature **that passed a clean exploratory pass** →
    - **Missing ID Report** — `| element | screen | current locator | description |` (omit if everything has an id).
    - **Notes** — risks / open questions.
 4. **Layering principle** (write into the plan): `screens` (no-assert) → `tests` (assert) → `regression/smoke` (compose). Each Screen described via the `declare-screen` skill (key element, action = verb). Element expected to lack an id → note it for `/qa:cook` to RECORD via the `missing-ids` skill.
+   - **Run-scoped lifecycle**: if the plan creates/changes base/core (`BaseTest`/`PlaywrightFactory`, or the app driver factory), state it explicitly — **one** browser/driver launched **once** at suite start (`@BeforeSuite`) and closed **once** at suite end (`@AfterSuite`), reused across every case (web: `../../rules/web/design-pattern.md` §7). Never open/close per test (causes browser flicker on regression).
 5. **Correct expectations**: the plan records the **canonical expectation** (per spec/original app) for each test so `/qa:cook` keeps the test honest. The sitemap only **lists** screens to create/update — `/qa:cook` is what actually writes them.
 6. **Conclude**: print the plan path + a 3-5 line summary for the user to review before `/qa:cook`.
 
