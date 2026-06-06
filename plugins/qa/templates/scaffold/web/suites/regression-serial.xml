@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
+<!--
+  REGRESSION suite, SERIAL (thread-count=1) — ONE browser for the whole run, no flicker.
+  The RECOMMENDED way to run regression (parallel over-counts retries + races shared state).
+  Used by `make regression`. Parallel variant: `make regression-fast`.
+-->
+<suite name="Regression (serial)" verbose="1" thread-count="1">
+    <listeners>
+        <listener class-name="__PKG__.base.RetryListener"/>
+        <listener class-name="__PKG__.base.SitemapListener"/>
+        <listener class-name="__PKG__.base.ReportListener"/>
+    </listeners>
+    <test name="Regression - all features (serial)">
+        <groups>
+            <run>
+                <include name="regression"/>
+            </run>
+        </groups>
+        <packages>
+            <package name="__PKG__.regressions.*"/>
+        </packages>
+    </test>
+</suite>

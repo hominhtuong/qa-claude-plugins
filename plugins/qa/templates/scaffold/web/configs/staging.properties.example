@@ -1,0 +1,38 @@
+# Staging environment config — TEMPLATE (committed). Copy to configs/staging.properties (git-ignored)
+# and fill the masked values. Precedence for any key:
+#   -D system property > OS env var > .env > configs/staging.properties
+# Real secrets (LOGIN_* / OTP) live in .env, NOT here.
+
+# App + its identity (login) origin.
+base.url=__BASE_URL__
+id.url=__ID_URL__
+
+# Home / "GoToHome": fastest reset is navigating to base.url + home.path.
+home.path=__HOME_PATH__
+
+# OTP on staging is often fixed (ask the team lead; do NOT commit real values).
+# otp.default=000000
+# otp.forgot=0000
+
+# --- Test data seeds (add per-feature keys as you /qa:cook features; DataGenerator randomises the rest) ---
+# data.product.name.prefix=AutoSP
+
+# Browser
+browser=chromium
+headless=true
+slowmo=0
+
+# Timeouts (milliseconds)
+timeout.default=30000
+timeout.navigation=45000
+timeout.element=15000
+
+# Flaky guard: retry a failed test this many times (0 = off).
+test.retry.count=2
+
+# Artifacts (each run → results/reports/<date>/<run>/: report + screenshots/ + traces/ + videos/)
+trace=on-failure
+video=off
+screenshot.on.failure=true
+screenshot.on.success=true
+results.dir=results

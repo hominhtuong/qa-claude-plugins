@@ -8,6 +8,8 @@ All plugin config lives in ONE folder, separate from the project's own ./.env:
       .plugin.env.example      # reference for .plugin.env keys.                        OVERWRITE (refreshed on update)
       log-bug.config.yml       # 🧩 board ids + dev-pic/field mappings (user-filled).   SCAFFOLD (never overwritten)
       log-bug.config.example.yml # reference for the config schema.                     OVERWRITE
+      release-gate.config.yml  # 🚦 Go/No-Go criteria for /qa:release-gate (user-filled).SCAFFOLD (never overwritten)
+      release-gate.config.example.yml # reference for the gate schema.                   OVERWRITE
       testcase-template.md     # 📄 test-case format (plugin-owned).                    OVERWRITE
       README.md                # 📖 usage guide — full command list (auto-generated).   OVERWRITE
 
@@ -66,11 +68,13 @@ def install_managed(root: Path):
         _copy(ENV_TEMPLATE, dst_dir / ".plugin.env.example", overwrite=True)
         _copy(ENV_TEMPLATE, dst_dir / ".plugin.env", overwrite=False)
 
-    # 2) log-bug config: .yml (scaffold) + .example.yml (overwrite reference)
-    cfg = MANAGED_SRC / "log-bug.config.yml"
-    if cfg.is_file():
-        _copy(cfg, dst_dir / "log-bug.config.example.yml", overwrite=True)
-        _copy(cfg, dst_dir / "log-bug.config.yml", overwrite=False)
+    # 2) user-edited config: .yml (scaffold, kept) + .example.yml (overwrite reference)
+    for name in ("log-bug.config.yml", "release-gate.config.yml"):
+        cfg = MANAGED_SRC / name
+        if cfg.is_file():
+            example = name.replace(".yml", ".example.yml")
+            _copy(cfg, dst_dir / example, overwrite=True)
+            _copy(cfg, dst_dir / name, overwrite=False)
 
     # 3) pure plugin-owned templates: always overwrite
     for name in ("testcase-template.md",):

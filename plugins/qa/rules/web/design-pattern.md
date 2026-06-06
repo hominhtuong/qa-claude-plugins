@@ -66,5 +66,26 @@ Each Screen `extends BaseScreen` and implements `screenKeyLocator()` — **one k
 
 A member **owns the whole** `screens/<feature>`, `tests/<feature>`, `smoke/<feature>`, `regressions/<feature>` (same package name across both the `src/main` and `src/test` trees). Shared code (`base`/`config`/`core`/`utils`) **rarely changes** — edit minimally, extend without breaking the API.
 
+## 7. Browser lifecycle — ONE window for the whole run (MANDATORY)
+
+**Symptom to prevent:** the browser opening/closing after every case (flicker) during smoke/regression. That happens when the browser is launched/closed at *method* scope. It must be launched **once** at the start of the run and closed **once** at the very end.
+
+**`PlaywrightFactory` = idempotent singleton.** `getOrStartPage()` starts Playwright → Browser → Context → Page **once** (on the first call) and returns the **same** `Page` on every later call (already started ⇒ reuse, never relaunch). `closeAll()` quits in reverse order (page → context → browser → playwright) and is the **ONLY** place that closes anything.
+
+**`BaseTest` owns the lifecycle — start once, close once at SUITE end (used by ALL tests):**
+- Start the browser via the idempotent factory: either `@BeforeSuite(alwaysRun = true)` → `PlaywrightFactory.getOrStartPage()`, **or** lazily on the first test's `@BeforeMethod` (`getOrStartPage()` reuses it thereafter — the proven SBHWeb pattern). Headless resolved from config/env. `@BeforeMethod`/`@AfterMethod` may open a per-test ExtentReports node + capture a screenshot, but **must not** launch or close the browser.
+- `@AfterSuite(alwaysRun = true)` → `PlaywrightFactory.closeAll()` — the browser closes here, **once, after every test is done** (the report is flushed at suite finish and upload/notify runs after — the report is sent when the run completes, not per case).
+
+**`BaseRegressionTest` / `BaseSmokeTest`** (extend BaseTest): `@BeforeMethod(alwaysRun = true)` does **ONLY** `GoToHome.ensure(page)` — it **navigates** the same window back to Home between tests. It NEVER launches or closes a browser/context/page.
+
+> The invariant that prevents flicker: **idempotent factory (start once, reuse) + close ONLY in `@AfterSuite`**. Whether the first start is in `@BeforeSuite` or the first `@BeforeMethod` does not matter — what matters is it never relaunches and never closes between tests.
+
+**❌ BANNED (these cause the flicker — red flags in review):**
+- Launching/closing the browser/context/page in `@BeforeMethod`/`@AfterMethod`/`@BeforeClass`/`@AfterClass`.
+- `page.close()` / `context.close()` / `browser.close()` between tests; a `new` Playwright/Browser/Context/Page per test, per class, or per Screen.
+- A retry (Retry listener) relaunching the browser — a retried test reuses the same page (re-runs `GoToHome.ensure`).
+
+**TestNG suite:** run **serial, single window** — `configs/suites/*-serial.xml`, no parallel (`thread-count=1`), so one browser serves every test in order. `make smoke` / `make regression` run one JVM → one suite → one browser, open from the first case to the last.
+
 > Naming standard & locator: [design-system.md](design-system.md). Code rules: [coding-rules.md](coding-rules.md). Review checklist: [review-checklist.md](review-checklist.md). Failure triage: [failure-triage.md](../failure-triage.md).
 </content>

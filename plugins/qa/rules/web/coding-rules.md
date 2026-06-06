@@ -43,8 +43,10 @@ When you declare an element for a Screen that **cannot be anchored by `data-test
 - Do not commit secrets. **Do not print passwords** to logs/reports (`User.toString()` already masks them — keep it).
 - Every environment value goes through `ConfigManager`. New key → update `configs/<env>.properties` (+ `.env.example` if secret). The `LOGIN_USERNAME`/`LOGIN_PASSWORD` account is in `.env` (git-ignored).
 
-## Shared state
-- The Browser/Page is **one window SHARED for the whole run** (`PlaywrightFactory`, serial). A test must not assume naturally clean state — handle its own preconditions/data; feature tests start from Home (`GoToHome`). Auth tests log out themselves in `LoginScreen.open()`.
+## Shared state & browser lifecycle (anti-flicker — MANDATORY)
+- The Browser/Page is **one window SHARED for the whole run** (`PlaywrightFactory` lazy singleton, serial). A test must not assume naturally clean state — handle its own preconditions/data; feature tests start from Home (`GoToHome`). Auth tests log out themselves in `LoginScreen.open()`.
+- **Launch ONCE, close ONCE.** The browser is launched in `BaseTest` `@BeforeSuite(alwaysRun=true)` and closed in `@AfterSuite(alwaysRun=true)` (report flushed, then `PlaywrightFactory.closeAll()`). Between tests, `@BeforeMethod` does **only** `GoToHome.ensure(page)` (navigate the SAME window) — it never opens/closes a browser.
+- ❌ **BAN (causes the browser to open/close after each case — flicker):** launching or closing the browser/context/page in `@BeforeMethod`/`@AfterMethod`/`@BeforeClass`/`@AfterClass`; `page.close()`/`context.close()`/`browser.close()` between tests; `new` Playwright/Browser/Context/Page per test/class/Screen; a retry that relaunches the browser. Full spec: [design-pattern.md](design-pattern.md) §7.
 
 ## Before finishing
 - `mvn -q -B test-compile` must be green (via skill `build-verify`). Re-run the related tests.

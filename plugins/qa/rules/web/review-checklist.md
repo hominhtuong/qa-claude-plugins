@@ -16,6 +16,12 @@ Check each item. Levels: 🔴 Blocker (must fix) · 🟡 Should fix · 🟢 Sugg
 - [ ] 🟡 Each screen created/edited has its corresponding `sitemap/screens/<id>.json` node updated.
 - [ ] 🟡 Account/credential/URL come from `ConfigManager`/`TestData`, not hard-coded.
 
+## A3. Browser lifecycle — ONE window per run (anti-flicker, design-pattern §7)
+- [ ] 🔴 Browser is launched **once** in `BaseTest` `@BeforeSuite(alwaysRun=true)` (lazy-singleton `PlaywrightFactory.getPage()`) and closed **once** in `@AfterSuite(alwaysRun=true)` (flush report → `PlaywrightFactory.closeAll()`).
+- [ ] 🔴 **No** browser/context/page launch or close in `@BeforeMethod`/`@AfterMethod`/`@BeforeClass`/`@AfterClass`; no `page.close()`/`context.close()`/`browser.close()` between tests; no `new` Playwright/Browser/Context/Page per test/class/Screen (these flicker the window open/close each case).
+- [ ] 🔴 `@BeforeMethod` in `BaseRegressionTest`/`BaseSmokeTest` does **only** `GoToHome.ensure(page)` (navigate the same window) — it does not (re)create a browser.
+- [ ] 🟡 Suite runs serial/single-window (`*-serial.xml`, `thread-count=1`, no parallel) so one browser serves every test; the Retry listener reuses the same page (no relaunch).
+
 ## B. Page Object Model
 - [ ] 🔴 Screen `extends BaseScreen` and implements `screenKeyLocator()` with a sensible key element (language-proof).
 - [ ] 🔴 Screen has `isDisplayed()` (derived from `screenKeyLocator()`, via `BaseScreen`, never throws).

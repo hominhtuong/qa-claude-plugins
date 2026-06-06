@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
+<!--
+  SMOKE suite, PARALLEL (faster, flakier). Each feature contributes ONE smoke class under
+  __PKG__.smoke.<feature>. Runs only @Test(groups = "smoke"). Run: `make smoke-fast`.
+  Prefer the serial variant (`make smoke`) for a clean report / single browser.
+-->
+<suite name="Smoke" verbose="1" parallel="methods" thread-count="3">
+    <listeners>
+        <listener class-name="__PKG__.base.RetryListener"/>
+        <listener class-name="__PKG__.base.SitemapListener"/>
+        <listener class-name="__PKG__.base.ReportListener"/>
+    </listeners>
+    <test name="Smoke - all features">
+        <groups>
+            <run>
+                <include name="smoke"/>
+            </run>
+        </groups>
+        <packages>
+            <package name="__PKG__.smoke.*"/>
+        </packages>
+    </test>
+</suite>

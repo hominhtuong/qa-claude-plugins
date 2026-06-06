@@ -31,10 +31,10 @@ Active board is read-only if: its `read_only: true` in the config, OR `.plugin.e
 ## Workflow (per skill `log-bug`)
 1. **Required fields** (ASK if missing from prompt AND config `defaults`): **Dev PIC** (resolve via `dev_pic:` map → open_id; no match → ask), **Sprint**, **Version**, **Feature** (`Tính năng`). Apply `skip:` rules per platform.
 2. **Auto-fill**: Name (`[Feature/screen] short bug description`), Platform (detect, default from `defaults.platform`), Type (UI/UX vs Function vs Performance), Status = `options.status_new`.
-3. **Priority** per [priority.md](../rules/priority.md) — **Severity is NOT used**. User gives a Priority → validate (big mismatch → ask). User omits it → **auto-estimate** from evidence + one-line rationale (do NOT ask just for priority). Match `options.priority`.
+3. **Priority** per [priority.md](../rules/priority.md) — **Severity is NOT used** for the board record. User gives a Priority → validate (big mismatch → ask). User omits it → **auto-estimate** from evidence + one-line rationale (do NOT ask just for priority). Match `options.priority`. For a deeper Severity-vs-Priority judgment (the user disputes the level), apply [severity-priority-framework.md](../rules/severity-priority-framework.md).
 4. **Attachment** (image/video): read & ANALYZE the content to understand the bug, then fill Steps/Actual/Expected; upload via Lark, attach the file token. Upload fails → create without attachment, notify.
 5. **Create via Lark**: use the project's Python Lark helper if present (e.g. `configs/lark_api.py`); otherwise use the Lark MCP bitable create-record tool ([lark-mcp-guide.md](../rules/lark-mcp-guide.md)). Map field names + option values from the config. **NEVER print tokens**.
-6. **2 modes**: full info → create directly (duplicate-check first if `check_duplicate: true`); missing required → show a draft + ask. After create → return a direct record link. Multiple bugs in one prompt → create sequentially, return a summary table.
+6. **2 modes**: full info → create directly (when `check_duplicate: true`, run the `check-duplicate-bug` skill first — i.e. `/qa:check-duplicate-bug` — and skip/confirm on a hit); missing required → show a draft + ask. After create → return a direct record link. Multiple bugs in one prompt → create sequentially, return a summary table.
 
 ## Rules
 - CREATE only — never modify/delete a record.

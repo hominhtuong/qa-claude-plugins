@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>__GROUP__</groupId>
+    <artifactId>__ARTIFACT__</artifactId>
+    <version>1.0.0</version>
+    <packaging>jar</packaging>
+    <name>__NAME__</name>
+    <description>Playwright Java + TestNG Page Object Model automation framework for __NAME__ (__BASE_URL__)</description>
+
+    <properties>
+        <maven.compiler.release>21</maven.compiler.release>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+        <!-- Bump these in one place -->
+        <playwright.version>1.56.0</playwright.version>
+        <testng.version>7.10.2</testng.version>
+        <gson.version>2.11.0</gson.version>
+        <extentreports.version>5.1.2</extentreports.version>
+        <surefire.version>3.5.2</surefire.version>
+
+        <!-- Default suite when running `mvn test` with no profile. Override with -DsuiteXmlFile=... -->
+        <suiteXmlFile>suites/regression-serial.xml</suiteXmlFile>
+
+        <!-- Default environment. Override with -Denv=staging|production -->
+        <env>staging</env>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.microsoft.playwright</groupId>
+            <artifactId>playwright</artifactId>
+            <version>${playwright.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.testng</groupId>
+            <artifactId>testng</artifactId>
+            <version>${testng.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>${gson.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.aventstack</groupId>
+            <artifactId>extentreports</artifactId>
+            <version>${extentreports.version}</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>${surefire.version}</version>
+                <configuration>
+                    <suiteXmlFiles>
+                        <suiteXmlFile>${suiteXmlFile}</suiteXmlFile>
+                    </suiteXmlFiles>
+                    <systemPropertyVariables>
+                        <env>${env}</env>
+                    </systemPropertyVariables>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+    <profiles>
+        <!-- mvn test -Psmoke  (parallel variant; serial is the default & recommended) -->
+        <profile>
+            <id>smoke</id>
+            <properties>
+                <suiteXmlFile>suites/smoke.xml</suiteXmlFile>
+            </properties>
+        </profile>
+        <profile>
+            <id>regression</id>
+            <properties>
+                <suiteXmlFile>suites/regression.xml</suiteXmlFile>
+            </properties>
+        </profile>
+    </profiles>
+</project>
