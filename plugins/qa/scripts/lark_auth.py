@@ -39,16 +39,25 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
+import ssl
 import sys
 import time
 import urllib.error
 import urllib.request
 from pathlib import Path
 
-from _env import env_str, find_env_file, load_env, project_root
+from _env import (env_bool, env_str, find_env_file, is_ssl_cert_error, load_env,
+                  make_ssl_context, project_root, ssl_help_text)
 
 DEFAULT_DOMAIN = "https://open.larksuite.com"   # Feishu (CN): https://open.feishu.cn
 STATE_NAME = "lark-auth.state.json"
+
+# Throwaway document tokens used to probe a READ scope when no real doc is supplied: a
+# missing scope returns a permission error regardless of the token; a present scope returns
+# a harmless "not found", which we read as "the scope works". See _classify_read_scope.
+_DUMMY_WIKI = "QAclaudeScopeProbeWikiToken0"
+_DUMMY_DOCX = "QAclaudeScopeProbeDocxToken0"
 
 # OAuth 2.0 (user token) endpoints + defaults. Override the redirect URI / scope via env
 # (LARK_REDIRECT_URI / LARK_USER_SCOPE) to match what the app registered in its console.
@@ -73,8 +82,8 @@ CAPABILITIES = {
     "bitable.write": ("bitable:app",          "Create/update Bitable records",   None),
     "drive.read":    ("drive:drive:readonly", "Read Drive files / documents",    "drive_read"),
     "drive.upload":  ("drive:drive",          "Upload attachments to Drive",     None),
-    "docx.read":     ("docx:document:readonly", "Read Docx documents",           None),
-    "wiki.read":     ("wiki:wiki:readonly",   "Read Wiki nodes",                 None),
+    "docx.read":     ("docx:document:readonly", "Read Docx documents",           "docx_read"),
+    "wiki.read":     ("wiki:wiki:readonly",   "Read Wiki nodes",                 "wiki_read"),
 }
 
 # Which capabilities each Lark-touching command needs.
@@ -91,23 +100,96 @@ COMMAND_REQS = {
 _DENY_CODES = {99991679, 99991668, 99991663, 1254302, 1254040, 131006, 131005, 91403, 234001}
 _DENY_WORDS = ("permission", "no access", "access denied", "forbidden", "scope", "unauthorized")
 
+# Signals that specifically mean "this TOKEN lacks the required SCOPE" (vs. "this resource
+# is gone / id is malformed", which means the scope itself is fine). Kept narrow on purpose
+# so a throwaway-token probe of a read scope does not mis-report a not-found as denied.
+_SCOPE_DENY_CODES = {99991672, 99991663, 99991679, 91403}
+_SCOPE_DENY_WORDS = ("following scopes is required", "following scope is required",
+                     "permission denied", "access denied", "no permission",
+                     "unauthorized", "forbidden", "not authorized")
+
+
+def creds_are_placeholder(app_id: str | None = None, secret: str | None = None) -> bool:
+    """True when LARK_APP_ID/SECRET are empty or still the template placeholders.
+
+    Catches the default `cli_xxxxxxxxxxxxxxxx` / `your_app_secret` so we fail with a clear
+    "fill your credentials" message instead of letting Lark return an opaque 10003.
+    """
+    app_id = env_str("LARK_APP_ID") if app_id is None else (app_id or "")
+    secret = env_str("LARK_APP_SECRET") if secret is None else (secret or "")
+    app_id, secret = app_id.strip(), secret.strip()
+    if not app_id or not secret:
+        return True
+    if secret.lower() in ("your_app_secret", "your_secret", "app_secret", "changeme"):
+        return True
+    if re.match(r"^cli_x{6,}$", app_id, re.I) or app_id.lower().startswith("cli_xxxx"):
+        return True
+    return False
+
+
+def diagnose_error(text: str) -> tuple[str, str]:
+    """Map a raw Lark/transport error string to (error_code, one-line actionable fix).
+
+    Stable error_codes let skills/agents propose the exact next step instead of guessing:
+      SSL_CERT · REDIRECT_MISMATCH · INVALID_PARAM · SCOPE_DENIED · DOC_DENIED · UNKNOWN
+    """
+    t = (text or "").lower()
+    if is_ssl_cert_error(text):
+        return ("SSL_CERT", "Đặt SSL_CERT_FILE trong .plugin.env trỏ tới CA bundle "
+                "(xem hướng dẫn SSL bên dưới), hoặc `pip install truststore`.")
+    if "20029" in t or "redirect" in t:
+        return ("REDIRECT_MISMATCH", "Đặt LARK_REDIRECT_URI khớp ĐÚNG Redirect URL đã đăng "
+                "ký trong app console rồi chạy lại /qa:auth-lark --login.")
+    if "10003" in t or "invalid param" in t:
+        return ("INVALID_PARAM", "Kiểm tra LARK_APP_ID/LARK_APP_SECRET (còn placeholder?) — "
+                "đặt giá trị thật từ Developer Console → Credentials & Basic Info.")
+    if any(w in t for w in ("following scopes is required", "following scope is required")) \
+            or "scope" in t:
+        return ("SCOPE_DENIED", "Cấp scope còn thiếu (Developer Console → Permissions & "
+                "Scopes → publish; user mode: thêm vào LARK_USER_SCOPE + login lại).")
+    if any(w in t for w in ("access denied", "permission", "forbidden", "no access")):
+        return ("DOC_DENIED", "Chia sẻ tài liệu cho app (tenant mode) hoặc cho chính bạn "
+                "(user mode), hoặc chạy /qa:auth-lark --login để dùng user token.")
+    return ("UNKNOWN", "Chạy /qa:auth-lark để kiểm tra credential & quyền.")
+
+
+_SSL_CTX = None  # built once; honours SSL_CERT_FILE / truststore from make_ssl_context()
+
+
+def _ssl_context():
+    global _SSL_CTX
+    if _SSL_CTX is None:
+        _SSL_CTX = make_ssl_context()
+    return _SSL_CTX
+
 
 def _api(method: str, url: str, token: str | None = None, body: dict | None = None) -> tuple[int, dict]:
-    """Call a Lark endpoint. Returns (http_status, json_body). Never raises."""
+    """Call a Lark endpoint. Returns (http_status, json_body). Never raises.
+
+    On a TLS trust failure (corporate self-signed proxy) the body carries `_ssl_cert: True`
+    so callers can surface the one-step SSL_CERT_FILE fix instead of a raw stacktrace.
+    """
     data = json.dumps(body).encode("utf-8") if body is not None else None
     headers = {"Content-Type": "application/json; charset=utf-8"}
     if token:
         headers["Authorization"] = f"Bearer {token}"
     req = urllib.request.Request(url, data=data, headers=headers, method=method)
     try:
-        with urllib.request.urlopen(req, timeout=20) as resp:
+        with urllib.request.urlopen(req, timeout=20, context=_ssl_context()) as resp:
             return resp.status, json.loads(resp.read().decode("utf-8", "replace") or "{}")
     except urllib.error.HTTPError as e:
         try:
             return e.code, json.loads(e.read().decode("utf-8", "replace") or "{}")
         except Exception:  # noqa: BLE001
             return e.code, {}
-    except Exception as e:  # noqa: BLE001 — network/DNS; treat as unknown, never crash
+    except (ssl.SSLError, urllib.error.URLError) as e:  # TLS / network — flag SSL trust failures
+        reason = getattr(e, "reason", e)
+        msg = str(reason)
+        out = {"_error": msg}
+        if is_ssl_cert_error(msg):
+            out["_ssl_cert"] = True
+        return 0, out
+    except Exception as e:  # noqa: BLE001 — anything else; treat as unknown, never crash
         return 0, {"_error": str(e)}
 
 
@@ -163,10 +245,14 @@ def user_token_from_refresh(domain: str, app_id: str, app_secret: str,
 
 
 def available_modes() -> dict:
-    """Which token modes are configured (from env). Tenant: app id+secret. User: refresh token."""
+    """Which token modes are usable. Both need REAL (non-placeholder) app id+secret — the
+    OAuth refresh of a user token also signs with the app credentials. Tenant additionally
+    needs ENABLE_LARK_APP=true; user additionally needs a stored refresh token.
+    """
+    real = not creds_are_placeholder()
     return {
-        TENANT: bool(env_str("LARK_APP_ID") and env_str("LARK_APP_SECRET")),
-        USER: bool(env_str("LARK_USER_REFRESH_TOKEN")),
+        TENANT: bool(real and env_bool("ENABLE_LARK_APP")),
+        USER: bool(real and env_str("LARK_USER_REFRESH_TOKEN")),
     }
 
 
@@ -255,6 +341,24 @@ def _classify(status: int, jb: dict) -> str:
     return UNKNOWN  # e.g. resource-not-found / bad id — the scope itself may be fine
 
 
+def _classify_read_scope(status: int, jb: dict) -> str:
+    """Classify a READ-scope probe: does the TOKEN actually hold the scope?
+
+    A real read probe may hit a throwaway/non-existent document, so we must NOT treat a
+    plain not-found as failure. Only a genuine permission/scope signal counts as DENIED;
+    any other (non-network) API response means the scope itself works → GRANTED.
+    """
+    code = jb.get("code")
+    if code == 0:
+        return GRANTED
+    if jb.get("_error"):  # network / DNS / TLS — can't conclude anything about the scope
+        return UNKNOWN
+    msg = str(jb.get("msg", "")).lower()
+    if status == 403 or code in _SCOPE_DENY_CODES or any(w in msg for w in _SCOPE_DENY_WORDS):
+        return DENIED
+    return GRANTED  # got a non-permission API error (not-found / bad id) → scope is present
+
+
 def _read_board_ids(root: Path) -> tuple[str, str]:
     """Best-effort (base_id, table_id) of the active board from log-bug.config.yml.
 
@@ -287,14 +391,64 @@ def _read_board_ids(root: Path) -> tuple[str, str]:
     return base, table
 
 
-def probe(cap: str, domain: str, token: str, root: Path) -> str:
-    """Non-destructively probe one capability. Returns a status constant."""
+_DOC_TOKEN_RE = re.compile(r"/(wiki|docx|docs|sheets|base|file)/([A-Za-z0-9]+)")
+
+
+def _parse_doc_token(url: str) -> tuple[str, str]:
+    """Best-effort (kind, token) from a Lark URL or bare token (mirrors lark_read.parse_url)."""
+    from urllib.parse import urlparse
+    m = _DOC_TOKEN_RE.search(urlparse(url).path if "://" in url else url)
+    if not m:
+        bare = url.strip().strip("/").split("/")[-1].split("?")[0]
+        return "wiki", bare
+    kind = "docx" if m.group(1) in ("docx", "docs") else m.group(1)
+    return kind, m.group(2)
+
+
+def _probe_targets(domain: str, token: str, probe_doc: str) -> dict:
+    """Resolve which wiki node / docx document the read probes should hit.
+
+    With a real --probe-doc the read scopes are tested against a document the user can open
+    (a clean GRANTED on success). Without one, throwaway tokens still surface a missing
+    scope (permission error) while a present scope returns a harmless not-found.
+    """
+    targets = {"wiki": _DUMMY_WIKI, "docx": _DUMMY_DOCX}
+    probe_doc = (probe_doc or "").strip()
+    if not probe_doc:
+        return targets
+    kind, tok = _parse_doc_token(probe_doc)
+    if kind == "wiki":
+        targets["wiki"] = tok
+        st, jb = _api("GET", f"{domain}/open-apis/wiki/v2/spaces/get_node?token={tok}", token)
+        obj = ((jb.get("data") or {}).get("node") or {}).get("obj_token")
+        if obj:
+            targets["docx"] = obj
+    elif kind in ("docx", "docs"):
+        targets["docx"] = tok
+    return targets
+
+
+def probe(cap: str, domain: str, token: str, root: Path, targets: dict) -> str:
+    """Non-destructively probe one capability. Returns a status constant.
+
+    READ caps (wiki/docx/drive) do a real, harmless GET and are classified with
+    _classify_read_scope so a missing scope shows as DENIED (never the old 'declared').
+    WRITE/upload caps stay DECLARED — they can't be verified without creating data.
+    """
     kind = CAPABILITIES[cap][2]
     if kind is None:
         return DECLARED
     if kind == "drive_read":
         st, jb = _api("GET", f"{domain}/open-apis/drive/v1/files?page_size=1", token)
-        return _classify(st, jb)
+        return _classify_read_scope(st, jb)
+    if kind == "docx_read":
+        doc = targets.get("docx") or _DUMMY_DOCX
+        st, jb = _api("GET", f"{domain}/open-apis/docx/v1/documents/{doc}/raw_content", token)
+        return _classify_read_scope(st, jb)
+    if kind == "wiki_read":
+        node = targets.get("wiki") or _DUMMY_WIKI
+        st, jb = _api("GET", f"{domain}/open-apis/wiki/v2/spaces/get_node?token={node}", token)
+        return _classify_read_scope(st, jb)
     if kind == "bitable_read":
         base, table = _read_board_ids(root)
         if not base:
@@ -325,27 +479,49 @@ def _upsert_env_key(env_path: Path, key: str, value: str) -> None:
     env_path.write_text("\n".join(out) + "\n", encoding="utf-8")
 
 
-def _probe_mode(token: str, requested: list[str], domain: str, root: Path) -> dict:
+def _probe_mode(token: str, requested: list[str], domain: str, root: Path,
+                probe_doc: str = "") -> dict:
     """Probe every requested capability with one mode's token."""
+    targets = _probe_targets(domain, token, probe_doc)
     caps = {}
     for cap in requested:
         scope, title, _ = CAPABILITIES[cap]
-        caps[cap] = {"scope": scope, "title": title, "status": probe(cap, domain, token, root)}
+        caps[cap] = {"scope": scope, "title": title,
+                     "status": probe(cap, domain, token, root, targets)}
     return caps
 
 
+def _no_creds_error() -> dict:
+    """Tailored exit-2 payload distinguishing placeholder vs disabled vs empty credentials."""
+    if creds_are_placeholder():
+        return {"ok": False, "error_code": "CREDS_PLACEHOLDER",
+                "error": "Chưa điền credential Lark thật. Mở .claude/qa-claude/.plugin.env, "
+                "đặt ENABLE_LARK_APP=true + LARK_APP_ID/LARK_APP_SECRET (Developer Console → "
+                "Credentials & Basic Info) — giá trị cli_xxx / your_app_secret là placeholder.",
+                "action": "Điền LARK_APP_ID + LARK_APP_SECRET thật và ENABLE_LARK_APP=true."}
+    if not env_bool("ENABLE_LARK_APP") and not env_str("LARK_USER_REFRESH_TOKEN"):
+        return {"ok": False, "error_code": "APP_DISABLED",
+                "error": "Credential có vẻ hợp lệ nhưng ENABLE_LARK_APP=false. Đặt "
+                "ENABLE_LARK_APP=true trong .plugin.env (hoặc /qa:auth-lark --login cho user mode).",
+                "action": "Đặt ENABLE_LARK_APP=true rồi chạy lại /qa:auth-lark."}
+    return {"ok": False, "error_code": "ENV_NO_CREDS",
+            "error": "No Lark credentials in .claude/qa-claude/.plugin.env — set "
+            "ENABLE_LARK_APP=true + LARK_APP_ID/LARK_APP_SECRET (tenant), and/or run "
+            "/qa:auth-lark --login (user). See /qa:setup.",
+            "action": "Chạy /qa:setup rồi điền credential Lark."}
+
+
 def run(requested: list[str], command: str | None, write: bool,
-        pref_override: str | None = None) -> tuple[int, dict]:
+        pref_override: str | None = None, probe_doc: str = "") -> tuple[int, dict]:
     load_env()
     domain = env_str("LARK_DOMAIN", DEFAULT_DOMAIN).rstrip("/")
     app_id = env_str("LARK_APP_ID")
     root = project_root()
     avail = available_modes()
+    probe_doc = probe_doc or env_str("LARK_PROBE_DOC")
 
     if not avail[TENANT] and not avail[USER]:
-        return 2, {"ok": False, "error": "No Lark credentials in .claude/qa-claude/.plugin.env — "
-                   "set ENABLE_LARK_APP=true + LARK_APP_ID/LARK_APP_SECRET (tenant mode), and/or "
-                   "run /qa:auth-lark --login (user mode). See /qa:setup."}
+        return 2, _no_creds_error()
 
     # Persist the preference if the caller set one.
     pref = (pref_override or env_str("LARK_TOKEN_MODE", AUTO)).strip().lower()
@@ -359,7 +535,7 @@ def run(requested: list[str], command: str | None, write: bool,
     if avail[TENANT]:
         t_tok, t_exp, t_err = get_tenant_token(domain)
         if t_tok:
-            modes[TENANT] = _probe_mode(t_tok, requested, domain, root)
+            modes[TENANT] = _probe_mode(t_tok, requested, domain, root, probe_doc)
             expires[TENANT] = t_exp
         else:
             errors[TENANT] = t_err
@@ -367,14 +543,19 @@ def run(requested: list[str], command: str | None, write: bool,
     if avail[USER]:
         u_tok, u_exp, u_err = get_user_token(domain)
         if u_tok:
-            modes[USER] = _probe_mode(u_tok, requested, domain, root)
+            modes[USER] = _probe_mode(u_tok, requested, domain, root, probe_doc)
             expires[USER] = u_exp
         else:
             errors[USER] = u_err
 
     if not modes:
+        # All configured modes failed to even authenticate — classify the first error so the
+        # message is actionable (SSL trust / invalid creds / redirect) rather than raw text.
+        first_err = next(iter(errors.values()), "")
+        ecode, action = diagnose_error(first_err)
         return 2, {"ok": False, "app_id": app_id, "domain": domain,
-                   "error": "authentication failed for all configured modes", "mode_errors": errors}
+                   "error": "authentication failed for all configured modes",
+                   "error_code": ecode, "action": action, "mode_errors": errors}
 
     caps_t = {k: v["status"] for k, v in modes.get(TENANT, {}).items()}
     caps_u = {k: v["status"] for k, v in modes.get(USER, {}).items()}
@@ -430,39 +611,68 @@ def run_login(code: str | None, redirect_uri: str | None, scope: str | None,
     load_env()
     domain = env_str("LARK_DOMAIN", DEFAULT_DOMAIN).rstrip("/")
     app_id, secret = env_str("LARK_APP_ID"), env_str("LARK_APP_SECRET")
+    # Did the redirect come from a real source (flag/env) or are we silently defaulting?
+    redirect_explicit = bool(redirect_uri or env_str("LARK_REDIRECT_URI"))
     redirect_uri = redirect_uri or env_str("LARK_REDIRECT_URI", DEFAULT_REDIRECT_URI)
     scope = scope or env_str("LARK_USER_SCOPE", DEFAULT_USER_SCOPE)
-    if not (app_id and secret):
-        return 2, {"ok": False, "error": "LARK_APP_ID / LARK_APP_SECRET required for OAuth login"}
+    if creds_are_placeholder(app_id, secret):
+        return 2, {"ok": False, "error_code": "CREDS_PLACEHOLDER",
+                   "error": "OAuth login cần LARK_APP_ID/LARK_APP_SECRET thật (đang là "
+                   "placeholder). Mở .plugin.env điền credential từ Developer Console.",
+                   "action": "Điền LARK_APP_ID + LARK_APP_SECRET thật rồi chạy lại."}
+
+    redirect_warning = None
+    if not redirect_explicit:
+        redirect_warning = (f"⚠️  Đang dùng redirect_uri mặc định {DEFAULT_REDIRECT_URI}. Giá trị "
+                            "này PHẢI khớp ĐÚNG một Redirect URL đã đăng ký trong app console "
+                            "(Security Settings → Redirect URLs). Nếu app bạn đăng ký URL khác "
+                            "(vd :3000/callback), đặt LARK_REDIRECT_URI trong .plugin.env, nếu "
+                            "không sẽ gặp lỗi 20029.")
 
     if not code:
         url = oauth_authorize_url(domain, app_id, redirect_uri, scope)
         return 0, {"ok": True, "login_url": url, "redirect_uri": redirect_uri,
+                   "redirect_warning": redirect_warning,
                    "next": "Open login_url, approve, copy the `code` from the redirected URL, "
                            "then re-run: /qa:auth-lark --login --code <CODE>"}
 
     access, refresh, _exp, err = oauth_exchange_code(domain, app_id, secret, code, redirect_uri)
     if not access or not refresh:
+        ecode, action = diagnose_error(err)
+        hint = action if ecode in ("REDIRECT_MISMATCH", "SSL_CERT", "INVALID_PARAM") else \
+            "Kiểm tra code còn mới + redirect_uri khớp ĐÚNG app console."
         return 2, {"ok": False, "error": f"OAuth code exchange failed: {err}",
-                   "hint": "Check the code is fresh + redirect_uri matches the app console exactly"}
+                   "error_code": ecode, "action": action, "hint": hint,
+                   "redirect_uri": redirect_uri}
     if write:
         env_path = find_env_file()
         if env_path:
             _upsert_env_key(env_path, "LARK_USER_REFRESH_TOKEN", refresh)
             _upsert_env_key(env_path, "LARK_TOKEN_MODE", env_str("LARK_TOKEN_MODE", AUTO))
+            _upsert_env_key(env_path, "LARK_REDIRECT_URI", redirect_uri)  # remember what worked
         os.environ["LARK_USER_REFRESH_TOKEN"] = refresh
+        os.environ["LARK_REDIRECT_URI"] = redirect_uri
     return 0, {"ok": True, "user_login": "stored a user refresh token",
+               "redirect_uri": redirect_uri,
                "next": "Re-run /qa:auth-lark to probe user-mode capabilities and resolve read_mode"}
 
 
 def _print_human(res: dict) -> None:
     if not res.get("ok"):
         print(f"❌ {res.get('error')}", file=sys.stderr)
+        if res.get("error_code"):
+            print(f"   [{res['error_code']}]", file=sys.stderr)
         if res.get("mode_errors"):
             for m, e in res["mode_errors"].items():
                 print(f"   • {m}: {e}", file=sys.stderr)
+        if res.get("action"):
+            print(f"   → {res['action']}", file=sys.stderr)
         if res.get("hint"):
             print(f"   hint: {res['hint']}", file=sys.stderr)
+        # Surface the full one-step SSL fix whenever a TLS trust failure is involved.
+        if res.get("error_code") == "SSL_CERT" or any(
+                is_ssl_cert_error(str(e)) for e in (res.get("mode_errors") or {}).values()):
+            print("\n" + ssl_help_text(), file=sys.stderr)
         return
 
     # --login output
@@ -470,10 +680,14 @@ def _print_human(res: dict) -> None:
         print("🔗 Mở URL này để cấp quyền user token (đăng nhập + đồng ý):")
         print(f"   {res['login_url']}")
         print(f"\n   redirect_uri = {res['redirect_uri']} (phải khớp Redirect URL trong app console)")
+        if res.get("redirect_warning"):
+            print(f"\n{res['redirect_warning']}")
         print(f"\n➡️  {res['next']}")
         return
     if res.get("user_login"):
         print(f"✅ {res['user_login']}")
+        if res.get("redirect_uri"):
+            print(f"   redirect_uri đã lưu vào .plugin.env: {res['redirect_uri']}")
         print(f"➡️  {res['next']}")
         return
 
@@ -500,7 +714,8 @@ def _print_human(res: dict) -> None:
                   f"({', '.join(cmd['required'])}).")
         else:
             print(f"\nℹ️  {cmd.get('note')}")
-    print("\nLegend: ✅granted ❌denied 📜declared(not tested—write/upload) ❔unknown ➖skipped(no resource)")
+    print("\nLegend: ✅granted(tested) ❌denied 📜declared(write/upload—can't test non-destructively) "
+          "❔unknown ➖skipped(no resource)")
 
 
 def main(argv=None):
@@ -517,6 +732,9 @@ def main(argv=None):
     ap.add_argument("--code", default=None, help="OAuth authorization code (with --login)")
     ap.add_argument("--redirect-uri", default=None, help="OAuth redirect URI (must match app console)")
     ap.add_argument("--scope", default=None, help="OAuth user scope string (space-separated)")
+    ap.add_argument("--probe-doc", default=None,
+                    help="test docx/wiki read scopes against this real doc URL "
+                         "(default LARK_PROBE_DOC; else a throwaway token still detects a missing scope)")
     ap.add_argument("--no-write", action="store_true",
                     help="do not update the state file / plugin env")
     ap.add_argument("--json", action="store_true", help="print machine-readable JSON")
@@ -540,7 +758,8 @@ def main(argv=None):
                   file=sys.stderr)
             return 2
 
-    code, res = run(requested, args.command, write=not args.no_write, pref_override=args.mode)
+    code, res = run(requested, args.command, write=not args.no_write, pref_override=args.mode,
+                    probe_doc=args.probe_doc or "")
     if args.json:
         print(json.dumps(res, indent=2, ensure_ascii=False))
     else:

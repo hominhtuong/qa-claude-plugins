@@ -62,11 +62,66 @@ def find_env_file() -> Path | None:
     return None
 
 
+def strip_inline_comment(value: str) -> str:
+    """Drop a trailing ` # comment` from an env value WITHOUT touching a `#` that is part
+    of the value (no whitespace before it — e.g. a secret `ab#cd`, a colour `#FF0000`, or
+    a URL fragment). The `#` only starts a comment when preceded by a space or tab, and
+    never inside a quoted span.
+
+    Examples:
+        "https://open.larksuite.com   # Feishu" -> "https://open.larksuite.com"
+        "ab#cd"                                  -> "ab#cd"   (no space before #)
+        "#FF0000"                                -> "#FF0000" (# at start = literal)
+        '"a # b"  # tail'                        -> '"a # b"'  (# inside quotes kept)
+    """
+    out = []
+    quote = ""
+    for i, ch in enumerate(value):
+        if quote:
+            out.append(ch)
+            if ch == quote:
+                quote = ""
+            continue
+        if ch in ('"', "'"):
+            quote = ch
+            out.append(ch)
+            continue
+        if ch == "#" and i > 0 and value[i - 1] in (" ", "\t"):
+            break
+        out.append(ch)
+    return "".join(out).rstrip()
+
+
+def parse_env_line(raw: str):
+    """Parse ONE `.plugin.env` line into (key, value), or None for blank/comment lines.
+
+    The single source of truth for env parsing across every plugin script: supports
+    `KEY=value` / `KEY = value`, ignores blank lines and whole-line `#` comments, cuts a
+    safe trailing inline comment (see strip_inline_comment), and strips one layer of
+    surrounding quotes. Returns None when the line carries no assignment.
+    """
+    line = raw.strip()
+    if not line or line.startswith("#") or "=" not in line:
+        return None
+    key, value = line.split("=", 1)
+    key = key.strip()
+    if not key:
+        return None
+    value = strip_inline_comment(value.strip())
+    if len(value) >= 2 and value[0] == value[-1] and value[0] in ("'", '"'):
+        value = value[1:-1]  # paired surrounding quotes — keep the literal inside
+    else:
+        value = value.strip('"').strip("'")
+    return key, value
+
+
 def load_env(verbose: bool = False) -> dict:
     """Parse the plugin's .plugin.env into os.environ (without overriding real env vars).
 
-    Returns the parsed key->value dict (may be empty if none). Supports `KEY=value`
-    and `KEY = value`, ignores blank lines and `#` comments, strips surrounding quotes.
+    Returns the parsed key->value dict (may be empty if none). Uses parse_env_line for
+    every line, so inline comments are cut safely and a `#` inside a value is preserved.
+    Keys whose name contains SSL_CERT (SSL_CERT_FILE/SSL_CERT_DIR) are also set early so
+    the TLS context that scripts build later picks up a corporate CA bundle.
     """
     parsed: dict = {}
     path = find_env_file()
@@ -75,19 +130,72 @@ def load_env(verbose: bool = False) -> dict:
             print("[env] no .plugin.env found — run the `setup` skill to create one")
         return parsed
     for raw in path.read_text(encoding="utf-8").splitlines():
-        line = raw.strip()
-        if not line or line.startswith("#") or "=" not in line:
+        kv = parse_env_line(raw)
+        if kv is None:
             continue
-        key, value = line.split("=", 1)
-        key = key.strip()
-        value = value.strip().strip('"').strip("'")
-        if not key:
-            continue
+        key, value = kv
         parsed[key] = value
         os.environ.setdefault(key, value)
     if verbose:
         print(f"[env] loaded {len(parsed)} keys from {path}")
     return parsed
+
+
+def make_ssl_context():
+    """Build a TLS context for urllib that works behind a corporate self-signed proxy.
+
+    Preference order, all stdlib-friendly:
+      1. `truststore` (if installed) → verify against the OS trust store, which on macOS /
+         Windows includes the corporate root CA injected by the proxy.
+      2. `ssl.create_default_context()` → honours `SSL_CERT_FILE` / `SSL_CERT_DIR` (which
+         load_env has already pushed into os.environ) so a hand-pointed CA bundle works.
+    Never raises; returns a usable context regardless.
+    """
+    import ssl
+    try:
+        import truststore  # optional dependency — only used if the user installed it
+        return truststore.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+    except Exception:  # noqa: BLE001 — not installed / unsupported → fall back
+        try:
+            return ssl.create_default_context()
+        except Exception:  # noqa: BLE001 — extremely defensive
+            return None
+
+
+def is_ssl_cert_error(text: str) -> bool:
+    """True when an error string looks like a TLS trust failure (self-signed / corp proxy)."""
+    t = (text or "").upper()
+    return ("CERTIFICATE_VERIFY_FAILED" in t
+            or "SELF-SIGNED CERTIFICATE" in t
+            or "SELF SIGNED CERTIFICATE" in t
+            or "UNABLE TO GET LOCAL ISSUER" in t)
+
+
+def ssl_help_text() -> str:
+    """One actionable block telling the user how to point SSL_CERT_FILE at a CA bundle."""
+    import sys as _sys
+    plat = _sys.platform
+    if plat == "darwin":
+        export = ('python3 -m pip install certifi  # once\n'
+                  '     CERT="$(python3 -m certifi)"\n'
+                  '     security find-certificate -a -p '
+                  '/System/Library/Keychains/SystemRootCertificates.keychain >> "$CERT"\n'
+                  '     security find-certificate -a -p '
+                  '/Library/Keychains/System.keychain >> "$CERT"\n'
+                  '     # then set in .plugin.env:  SSL_CERT_FILE=$CERT')
+    elif plat.startswith("win"):
+        export = ('pip install certifi python-certifi-win32  # picks up the Windows store\n'
+                  '     # or export your corp root CA (.pem) and set SSL_CERT_FILE to it')
+    else:
+        export = ('pip install certifi  # then append your corp root CA:\n'
+                  '     cat /etc/ssl/certs/ca-certificates.crt your-corp-root.pem > '
+                  '~/qa-ca-bundle.pem\n'
+                  '     # then set in .plugin.env:  SSL_CERT_FILE=~/qa-ca-bundle.pem')
+    return ("🔒 SSL CERTIFICATE_VERIFY_FAILED — máy đang sau corporate proxy (root CA "
+            "không có trong bundle của Python).\n"
+            "   Khắc phục 1 bước: tạo CA bundle rồi đặt SSL_CERT_FILE trong "
+            ".claude/qa-claude/.plugin.env:\n     " + export +
+            "\n   (Hoặc cài `pip install truststore` để tự dùng trust store của hệ điều hành.)")
 
 
 def env_bool(key: str, default: bool = False) -> bool:

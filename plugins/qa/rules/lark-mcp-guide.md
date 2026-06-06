@@ -37,6 +37,30 @@ it. The resolution is recorded so anything can inspect it:
 If a read returns an auth/permission error, run `/qa:auth-lark` (or `--login` for user mode)
 to fix scopes — do NOT hardcode tokens.
 
+## Error codes (both `lark_auth.py` and `lark_read.py` emit these)
+
+Every failure carries a stable `error_code` + a one-line `action`. Relay the `action`; don't
+re-derive the fix.
+
+| `error_code` | Cause | One-step fix |
+|---|---|---|
+| `CREDS_PLACEHOLDER` | `LARK_APP_ID`/`SECRET` still `cli_xxx`/`your_app_secret` | fill real creds + `ENABLE_LARK_APP=true` |
+| `APP_DISABLED` | creds real but `ENABLE_LARK_APP=false` | set `ENABLE_LARK_APP=true` |
+| `SSL_CERT` | corporate self-signed proxy (CERTIFICATE_VERIFY_FAILED) | set `SSL_CERT_FILE` to a CA bundle, or `pip install truststore` (the output prints the exact command) |
+| `REDIRECT_MISMATCH` | OAuth error 20029 | set `LARK_REDIRECT_URI` to a URL registered in the app console |
+| `INVALID_PARAM` | Lark 10003 | re-check `LARK_APP_ID`/`SECRET` |
+| `SCOPE_DENIED` | token lacks the scope | grant it (console → publish) or add to `LARK_USER_SCOPE` + re-login |
+| `DOC_DENIED` | doc not shared | share with app/user, or `--login` for user mode |
+
+Read scopes (`wiki.read`/`docx.read`/`drive.read`) are **probed for real** by `/qa:auth-lark`
+— a missing scope shows as denied up front (not an optimistic "declared"). Use
+`--probe-doc <url>` (or `LARK_PROBE_DOC`) to test against the exact doc you need.
+
+### SSL behind a corporate proxy
+The TLS context honours `SSL_CERT_FILE` (set it in `.plugin.env`) and auto-uses the OS trust
+store if `truststore` is installed. `/qa:doctor` also probes HTTPS to Lark and prints the fix
+if a self-signed CA blocks it. NEVER disable verification — point at a real CA bundle.
+
 ---
 
 ## (Optional) Using the Lark MCP instead of Python

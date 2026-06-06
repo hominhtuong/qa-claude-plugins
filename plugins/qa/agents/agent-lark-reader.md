@@ -43,10 +43,19 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/lark_read.py" "<url>" --media-urls
 
 This returns JSON with: `title`, `obj_type`, `obj_token`, `text` (full plain text), `images[]` (`token`, `width`, `height`, `tmp_url`), `links[]` (embedded mentions/links), `comments[]` (`quote`, `text`, `resolved`, `reply_count`), and `source_url`.
 
-**On error** (JSON `"ok": false`):
-- Credentials missing / auth failed (exit 2) → write in the summary: *"Không xác thực được Lark app. Chạy `/qa:auth-lark` để kiểm tra quyền (cần wiki.read / docx.read / drive.read)."* and stop.
-- Cannot read the document (exit 4) → write: *"Không đọc được tài liệu Lark. Kiểm tra: (1) link đúng? (2) app đã được chia sẻ quyền xem tài liệu này?"* and stop.
+**On error** (JSON `"ok": false`) — the JSON now carries a stable **`error_code`** plus a one-line **`action`** (and `ssl_help` for SSL). **Relay the `action` verbatim** as the fix instead of guessing; map by `error_code`:
+
+| `error_code` | What to write in the summary + next step |
+|---|---|
+| `CREDS_PLACEHOLDER` / `ENV_NO_CREDS` / `APP_DISABLED` | *"Chưa cấu hình credential Lark thật."* → run `/qa:auth-lark`; the `action` says exactly what to set in `.plugin.env`. |
+| `SSL_CERT` | *"Lỗi SSL (corporate proxy)."* → print the `ssl_help` block: set `SSL_CERT_FILE` (or `pip install truststore`). |
+| `REDIRECT_MISMATCH` | OAuth 20029 → set `LARK_REDIRECT_URI` to a URL registered in the app console, then `/qa:auth-lark --login`. |
+| `SCOPE_DENIED` | The token lacks the scope → run `/qa:auth-lark --command analyze-spec` to see the exact scope to grant. |
+| `DOC_DENIED` | Doc not shared → share it with the app (tenant) or you (user), or `/qa:auth-lark --login` for user mode. |
+| `INVALID_PARAM` / `UNKNOWN` | Re-run `/qa:auth-lark`; relay the `action`. |
+
 - `obj_type` != docx (sheet/bitable/…) → record the metadata + a note that this type needs manual review; do not invent content.
+- **Never invent document content on any error** — write the diagnosis + the one-step fix and stop.
 
 ### Step 2: Download & view inline images
 
