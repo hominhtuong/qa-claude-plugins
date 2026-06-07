@@ -24,6 +24,8 @@
 
 **Golden rule: reproduce on the REAL APP before concluding.** (via Appium MCP — skill `navigate-app` — or manually.)
 
+> ⏱️ **Rule out timing FIRST (anti-flake).** The most common false "bug" is an async one: API still in flight, data not refreshed, element not yet mounted. Before attributing ANY label, **wait ~1s on the expected state and re-check** (web: `browser_wait_for` on the text/state or network-idle · app: poll the element — not a blind sleep), then **reproduce ≥2× from a clean state** and **vary the path** (reload / re-open / another entry point). If the correct state appears after the wait, or the symptom won't reproduce → it is **NOT** `[APP-BUG]`: it's a timing artifact (drop it, or `[FRAMEWORK]` *missing wait* if our own test lacked the wait). Only a symptom that **survives wait + retry + path-variation** earns an `[APP-BUG]`. Record the reproduction steps + the repro count.
+
 ```
 FAIL / element-not-found
    │
