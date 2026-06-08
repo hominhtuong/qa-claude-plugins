@@ -135,8 +135,9 @@ def diagnose_error(text: str) -> tuple[str, str]:
     """
     t = (text or "").lower()
     if is_ssl_cert_error(text):
-        return ("SSL_CERT", "Đặt SSL_CERT_FILE trong .plugin.env trỏ tới CA bundle "
-                "(xem hướng dẫn SSL bên dưới), hoặc `pip install truststore`.")
+        return ("SSL_CERT", "Chạy /qa:doctor --fix để tự cài truststore (dùng trust store của "
+                "hệ điều hành — xong ngay). Nếu không cài được mới cần đặt SSL_CERT_FILE trong "
+                ".plugin.env trỏ tới CA bundle (xem hướng dẫn SSL bên dưới).")
     if "20029" in t or "redirect" in t:
         return ("REDIRECT_MISMATCH", "Đặt LARK_REDIRECT_URI khớp ĐÚNG Redirect URL đã đăng "
                 "ký trong app console rồi chạy lại /qa:auth-lark --login.")

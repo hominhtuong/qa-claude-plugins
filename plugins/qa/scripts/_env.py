@@ -193,9 +193,10 @@ def ssl_help_text() -> str:
                   '     # then set in .plugin.env:  SSL_CERT_FILE=~/qa-ca-bundle.pem')
     return ("🔒 SSL CERTIFICATE_VERIFY_FAILED — máy đang sau corporate proxy (root CA "
             "không có trong bundle của Python).\n"
-            "   Khắc phục 1 bước: tạo CA bundle rồi đặt SSL_CERT_FILE trong "
-            ".claude/qa-claude/.plugin.env:\n     " + export +
-            "\n   (Hoặc cài `pip install truststore` để tự dùng trust store của hệ điều hành.)")
+            "   ✅ Cách nhanh nhất: chạy /qa:doctor --fix — nó tự cài `truststore` để dùng "
+            "trust store của hệ điều hành (đã có sẵn root CA công ty), không cần config gì.\n"
+            "   Nếu pip không cài được (offline / Python < 3.10), khắc phục thủ công bằng cách "
+            "tạo CA bundle rồi đặt SSL_CERT_FILE trong .claude/qa-claude/.plugin.env:\n     " + export)
 
 
 def env_bool(key: str, default: bool = False) -> bool:

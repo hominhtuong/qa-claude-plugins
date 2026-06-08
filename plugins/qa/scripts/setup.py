@@ -17,9 +17,9 @@ SCAFFOLD = create only if missing (protects your secrets / board config).
 OVERWRITE = always refreshed from the plugin (so an update brings the latest schema/format).
 
 Usage:
-    python3 setup.py            # scaffold + refresh .claude/qa-claude + doctor (auto-install wrangler)
+    python3 setup.py            # scaffold + refresh .claude/qa-claude + doctor (auto-install wrangler + truststore)
     python3 setup.py --update   # alias — same behaviour (refresh the OVERWRITE files)
-    python3 setup.py --no-fix   # skip wrangler auto-install, report only
+    python3 setup.py --no-fix   # skip auto-install (wrangler/truststore), report only
 """
 import shutil
 import sys
