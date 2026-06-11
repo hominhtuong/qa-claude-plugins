@@ -36,23 +36,67 @@ every metric lines up pixel-for-pixel.
 | **Aspect delta** (`aspect_delta`) | How different the two frames' aspect ratios are — high = wrong device size or mis-paired frame (metrics then computed on a forced canvas, treat with care). | ~0 | ≥ 0.15 |
 | **Color match %** (`color_match_pct`) | Friendly 0–100 reskin of `deltaE_mean` for the report (10 Delta-E → 0%). | ~100 | low |
 
+The global numbers answer *"is something off?"* but can't tell **background from text**, nor a
+**heavier** font from a **bigger** one. That's what the per-region layer is for.
+
+## Typed findings (per region) — *HOW* it's wrong
+
+The aligned frames are split into a grid (`grid_rows`×`grid_cols`, default 6×4). In each cell the
+engine separates **background vs foreground (text)** colors (2-means) and, on the text mask, measures
+weight/size/shape. Each difference beyond tolerance becomes a typed **finding** with a region label
+(`r2c1`) + a human position (`giữa-trái`). The AI reads `findings[]` + the rolled-up
+`summary_by_type{}` — it doesn't recompute anything. Finding types:
+
+| `type` | Detects | Signal (local, per cell) | Default warn / fail |
+|---|---|---|---|
+| `color.background` | wrong **fill/background** color | CIEDE2000 between the two cells' dominant (background) colors; reports `ref`/`actual` hex | ΔE 3 / 6 |
+| `color.text` | wrong **text/foreground** color | CIEDE2000 between the minority contrasting (text) colors; hex each side | ΔE 4 / 8 |
+| `typography.weight` | **đậm/nhạt** (bold vs regular) | stroke width = 2×mean distance-transform of the text mask; compared as `abs(Δ)/ref` ratio | 15% / 25% |
+| `typography.size` | **font size** | median glyph height via connected components; `abs(Δ)/ref` ratio (device-normalized on the common canvas) | 10% / 18% |
+| `typography.family` | **different font family** (serif vs sans …) | edge-orientation histogram (12 bins) distance over text pixels. **LOW confidence** — flagged for the human to confirm; suppressed in a cell that already shows a weight change | dist 0.07 / 0.11 |
+| `layout.shift` | **bố cục / căn chỉnh** drift | local SSIM of the cell (lower = more structural drift) | SSIM 0.82 / 0.62 |
+| `content.flat` | design region has text but the app cell is ~flat | foreground present in ref, absent in actual (possible missing text or different state/data) | warn only |
+
+Each finding carries a `detail` string already phrased in Vietnamese (e.g. *"màu nền lệch ΔE 50.9
+(design #2196F3 → app #34A853)"*, *"độ đậm chữ khác: app đậm hơn ~46% (stroke 3.50→5.10)"*), so the
+report can quote it directly. `summary_by_type` gives `{fail, warn, regions[]}` per type for a quick
+roll-up. Findings are capped (top ~14 by severity) to stay token-cheap.
+
+> **Device tolerance & honesty (the user's bar):** thresholds are perceptual, not zero — small
+> anti-aliasing / DPI noise passes (an identical pair yields **no** findings). But a difference the
+> eye would catch must fail: serif-vs-sans, a clearly bolder weight, a visibly different size or a
+> wrong background/text color all trip a finding. `typography.family` is deliberately marked
+> low-confidence (shape, not OCR) — surface it, but let the human/AI confirm via the heatmap/image.
+
 ## Verdict
-`ui_compare.py` rolls the metrics into **PASS / WARN / FAIL** (see `_verdict`):
-- **FAIL** if any: `deltaE_mean ≥ deltaE_mean_fail`, `deltaE_p95 ≥ deltaE_p95_fail`,
-  `ssim ≤ ssim_fail`, `phash_distance ≥ phash_fail`, or `hist_corr ≤ hist_corr_fail`.
-- **WARN** if borderline: `deltaE_mean ≥ deltaE_mean_warn`, `ssim ≤ ssim_warn`,
-  `hist_corr ≤ hist_corr_warn`, or `aspect_delta ≥ 0.15`.
-- **PASS** otherwise. Each verdict carries human `reasons[]` citing the exact number that fired.
+`ui_compare.py` rolls the global metrics **and** the typed findings into **PASS / WARN / FAIL**
+(see `_verdict`):
+
+- **FAIL** if any global fail (`deltaE_mean ≥ deltaE_mean_fail`, `deltaE_p95 ≥ deltaE_p95_fail`,
+  `ssim ≤ ssim_fail`, `phash_distance ≥ phash_fail`, `hist_corr ≤ hist_corr_fail`) **OR any region
+  finding has severity `fail`** (a wrong background/text color, weight, size, family or layout in
+  even one region).
+- **WARN** if borderline global (`deltaE_mean ≥ deltaE_mean_warn`, `ssim ≤ ssim_warn`,
+  `hist_corr ≤ hist_corr_warn`, `aspect_delta ≥ 0.15`) **OR any region finding is `warn`**.
+- **PASS** otherwise. `reasons[]` cite the exact numbers + which attribute failed in which regions.
 
 ### Default thresholds (`ui-engine.config.json` → `thresholds`)
 ```
+# global
 deltaE_mean_warn 3.0 · deltaE_mean_fail 6.0 · deltaE_p95_fail 12.0
-ssim_warn 0.90 · ssim_fail 0.80
-phash_fail 12
-hist_corr_warn 0.92 · hist_corr_fail 0.85
+ssim_warn 0.90 · ssim_fail 0.80 · phash_fail 12 · hist_corr_warn 0.92 · hist_corr_fail 0.85
+# per-region color (background vs text separated)
+bg_deltaE_warn 3.0 · bg_deltaE_fail 6.0 · text_deltaE_warn 4.0 · text_deltaE_fail 8.0
+# per-region typography
+stroke_ratio_warn 0.15 · stroke_ratio_fail 0.25   (weight / đậm-nhạt)
+size_ratio_warn 0.10 · size_ratio_fail 0.18       (font size)
+shape_dist_warn 0.07 · shape_dist_fail 0.11       (font family — low confidence)
+# per-region layout + grid
+cell_ssim_warn 0.82 · cell_ssim_fail 0.62 · grid_rows 6 · grid_cols 4
 ```
-Tune per project by editing the config (no reinstall). Tighten Delta-E for brand-strict UIs; loosen
-SSIM for content-heavy screens whose data legitimately varies.
+Tune per project by editing the config (no reinstall). Tighten color/stroke for brand-strict UIs;
+loosen `cell_ssim` / `size_ratio` for content-heavy screens whose data legitimately varies; raise
+`grid_rows`×`grid_cols` for denser localization (more cells = finer regions, a little slower).
 
 ## How to read a verdict (triage)
 1. **PASS** → ✅ checked, no defect.

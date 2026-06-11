@@ -34,13 +34,22 @@ reads the result.** Metric meanings + thresholds: [ui-visual-compare.md](../../r
      --diff results/<feature>/ui-compare/diffs/<id>-heatmap.png \
      --thresholds <config_path>
    ```
-   It prints (and writes to `--out`) a small JSON: `verdict`, `reasons[]`, and `metrics{}`
-   (`deltaE_mean`, `deltaE_p95`, `color_perceptible_pct`, `palette_deltaE`, `ssim`, `hist_corr`,
-   `phash_distance`, `aspect_delta`, `color_match_pct`). It also **appends one line to
-   `model-log.jsonl`** (the model-efficiency tracking log) and writes a **diff heatmap** PNG.
+   It prints (and writes to `--out`) a small JSON with three layers:
+   - `verdict` + `reasons[]` — the headline call, already phrased.
+   - `metrics{}` — global numbers (`deltaE_mean`, `deltaE_p95`, `palette_deltaE`, `ssim`,
+     `hist_corr`, `phash_distance`, `aspect_delta`, `color_match_pct`).
+   - **`findings[]` + `summary_by_type{}`** — the *typed, per-region* detail: it doesn't just say
+     "different", it says **HOW** — `color.background` / `color.text` (separated, with `ref`/`actual`
+     hex), `typography.weight` (đậm/nhạt, stroke ratio), `typography.size` (glyph-height ratio),
+     `typography.family` (serif-vs-sans, LOW confidence), `layout.shift` (local SSIM) — each tagged
+     with a region (`r2c1`) + human position (`giữa-trái`) + a ready-to-quote `detail` string.
+   It also **appends one line to `model-log.jsonl`** (the model-efficiency log) and writes a
+   **diff heatmap** PNG. Metric/finding/threshold reference: [ui-visual-compare.md](../../rules/ui-visual-compare.md).
 
 3. **Read ONLY the small JSON** (`pairs/<id>.json` / stdout) — do NOT Read the source screenshots.
-   Interpret the verdict:
+   Lead with `summary_by_type` (which attributes failed, in how many regions) then drill into
+   `findings[]` for the specifics to quote (e.g. *"màu nền header lệch ΔE 50.9: design #2196F3 → app
+   #34A853"*, *"chữ tiêu đề đậm hơn ~46%"*, *"cỡ chữ body lớn hơn ~27%"*). Interpret the verdict:
    - **PASS** — color + structure within tolerance. Record as ✅ checked, no defect.
    - **WARN** — borderline (e.g. slight tint, minor structural drift). Note it; the AI MAY Read the
      **downscaled** actual + reference to judge whether it's a real issue (use `scripts/downscale_image.py`).
