@@ -101,8 +101,13 @@ def build() -> str:
     lines.append("")
     lines.append("1. **Cài đặt 1 lần:** `/qa:setup` — tạo `.claude/qa-claude/` (config + `.plugin.env`), vá `.gitignore`, kiểm tra toolchain.")
     lines.append("2. **Điền secrets (nếu dùng Lark/R2/notify):** mở `.claude/qa-claude/.plugin.env` và bật các `ENABLE_*` cần thiết.")
-    lines.append("3. **Cần Lark bug board?** điền `.claude/qa-claude/log-bug.config.yml` rồi `/qa:auth-lark` để xác thực.")
+    lines.append("3. **Cần Lark bug board?** điền `.claude/qa-claude/log-bug.config.yml` rồi `/qa:auth-lark --login` để xác thực.")
     lines.append("4. **Chưa rõ lệnh nào?** gõ `/qa:help` (tổng quan) hoặc `/qa:help <tên-lệnh>` (đi sâu 1 lệnh).")
+    lines.append("")
+    lines.append("> **Chính sách đăng nhập Lark (bắt buộc):** xin **FULL quyền** (read+write) trong 1 lần consent; "
+                 "redirect mặc định cổng **3000** (`http://localhost:3000/callback`); **mode mặc định = `user`** — "
+                 "đọc ưu tiên user, còn **tạo/cập nhật bug board BẮT BUỘC dùng user token** (`useUAT: true`) để truy vết "
+                 "ai thao tác (không ghi bằng app/tenant token). Chi tiết: `/qa:auth-lark` và `rules/lark-mcp-guide.md`.")
     lines.append("")
 
     lines.append("## 🔁 Hai luồng làm việc")

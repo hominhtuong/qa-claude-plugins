@@ -88,6 +88,7 @@ def run(fix: bool = False) -> int:
         else:
             print("[fix] wrangler install failed — install manually: npm install -g wrangler")
 
+    _check_image_backend(fix=fix)
     _check_tls(fix=fix)
 
     if missing_required:
@@ -138,6 +139,38 @@ def _ensure_truststore(fix: bool) -> bool:
     print("[fix] truststore install failed (offline or restricted pip?) — "
           "will fall back to the SSL_CERT_FILE hint if Lark TLS is blocked.")
     return False
+
+
+def _check_image_backend(fix: bool = False) -> None:
+    """Optional: an image downscale backend (for screenshot-heavy runs / the many-image cap).
+
+    `scripts/downscale_image.py` shrinks oversized screenshots so they can be Read into context
+    without tripping the API's per-image dimension cap. It uses the first available of
+    Pillow / sips / ImageMagick / ffmpeg. Pillow is the simplest cross-platform option, so with
+    --fix we offer to pip-install it. Non-fatal — only screenshot-heavy commands need it.
+    """
+    try:
+        sys.path.insert(0, str(__import__("pathlib").Path(__file__).resolve().parent))
+        from downscale_image import available_backend
+        backend = available_backend()
+    except Exception:  # noqa: BLE001
+        backend = ""
+    if backend:
+        print(f"· [ok]   image     downscale backend: {backend} (screenshots safe to Read)")
+        return
+    if fix:
+        print("\n[fix] installing Pillow (image downscale backend for screenshot-heavy runs)...")
+        base = [sys.executable, "-m", "pip", "install", "--quiet", "Pillow"]
+        for cmd in (base, base + ["--user"]):
+            if subprocess.run(cmd).returncode == 0:
+                print("[fix] Pillow installed — screenshots will downscale before Read.")
+                return
+        print("[fix] Pillow install failed — install ONE backend manually: `pip install Pillow`, "
+              "or macOS `sips` (built-in), or ImageMagick / ffmpeg.")
+        return
+    print("· [warn] image     no downscale backend (Pillow/sips/ImageMagick/ffmpeg). "
+          "Screenshot-heavy runs (e.g. /qa:exploratory) may hit the many-image cap. "
+          "Fix: `pip install Pillow` (or run /qa:doctor --fix).")
 
 
 def _check_tls(fix: bool = False) -> None:

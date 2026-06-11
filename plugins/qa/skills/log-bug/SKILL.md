@@ -17,7 +17,8 @@ A reusable capability to **create a bug record** on Lark Bitable per the team co
    - `active_board` + `boards:` (each has `base_id`, `table_id`, `view_id`, `wiki_token`, `read_only`).
    - `fields:` (logical name → board field name), `options:` (priority/type/platform/status_new), `dev_pic:` (name/alias → `ou_` open_id), `defaults:` (sprint/version/platform/test_account), `skip:` (platforms dropping sprint/version), `check_duplicate`.
    - **Missing config** → tell the user to run `/qa:setup`; or if the user pasted a board URL, extract `base_id`/`table_id` from `.../base/<base_id>?table=<table_id>` and proceed.
-   - Secrets (Lark app id/secret, tokens) live in `.claude/qa-claude/.plugin.env` (the `LARK APP` section) / the project's Lark MCP — never in this file, never printed. Run **`/qa:auth-lark --command log-bug`** first to confirm the app id authenticates and has `bitable.read`/`bitable.write` — a missing scope surfaces there, not mid-create.
+   - Secrets (Lark app id/secret, tokens) live in `.claude/qa-claude/.plugin.env` (the `LARK APP` section) / the project's Lark MCP — never in this file, never printed. Run **`/qa:auth-lark --command log-bug`** first to confirm authentication + `bitable.read`/`bitable.write` — a missing scope surfaces there, not mid-create.
+   - **WRITE = user token (MANDATORY, audit trail)**: create the record with the **USER token** (`useUAT: true` on the MCP, or `get_write_token()` in Python) so the board shows WHO logged the bug. NEVER create with the tenant/app token (it logs the record as the bot). If no user token is configured, STOP and tell the user to run `/qa:auth-lark --login` — do not fall back to the app token. See [lark-mcp-guide.md](../../rules/lark-mcp-guide.md).
 2. **Read-only guard (BEFORE every create)**: read-only if the active board's `read_only: true`, OR `.plugin.env` `LARK_BUG_READ_ONLY` ∈ {true,1,yes}, OR a state file marks it. Read-only → **STOP, do NOT create**; tell the user to switch `active_board` (or `/qa:update-board`) to a staging board, or bypass intentionally. Do NOT switch the board yourself.
 3. **Multi-board daily confirmation**: `boards:` has ≥ 2 entries → on the FIRST bug each day, confirm the active board with the user (compare a state file `last_confirm_date`/`confirmed_alias` against today + the active alias). 1 board → skip. User pasted a board URL → skip that time.
 4. **Gather required fields** (ASK if missing from prompt AND config `defaults`):
@@ -31,8 +32,8 @@ A reusable capability to **create a bug record** on Lark Bitable per the team co
    - User omitted → **auto-estimate** from the evidence + write a one-line rationale. Do NOT ask just for priority.
    - Normalize to an option in `options.priority`.
 7. **Attachment** (if any): image/video → read & ANALYZE the content (which screen, steps, actual vs expected) before filling. Short user description → it is the primary intent; media adds detail. Upload via Lark (helper or MCP), get the file token. Upload fails → create without attachment, tell the user to add it manually.
-8. **Create the record**:
-   - Prefer the project's Python Lark helper if present (e.g. `configs/lark_api.py`: `create_record`, `search_records`, `list_fields`). Otherwise use the **Lark MCP** bitable create-record tool (see [lark-mcp-guide.md](../../rules/lark-mcp-guide.md)).
+8. **Create the record** (with the **USER token** — see step 1, mandatory for the audit trail):
+   - Prefer the project's Python Lark helper if present (e.g. `configs/lark_api.py`: `create_record`, `search_records`, `list_fields`). Otherwise use the **Lark MCP** bitable create-record tool with `useUAT: true` (see [lark-mcp-guide.md](../../rules/lark-mcp-guide.md)).
    - Map each value to the board field name from `fields:` and the option text from `options:`; Dev PIC → open_id(s).
 9. **Body template** for the `Input data / Action` field:
    ```

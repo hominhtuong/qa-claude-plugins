@@ -63,12 +63,27 @@ _DUMMY_DOCX = "QAclaudeScopeProbeDocxToken0"
 # (LARK_REDIRECT_URI / LARK_USER_SCOPE) to match what the app registered in its console.
 OAUTH_TOKEN_PATH = "/open-apis/authen/v2/oauth/token"
 OAUTH_AUTHORIZE_PATH = "/open-apis/authen/v1/authorize"
-DEFAULT_REDIRECT_URI = "http://localhost:8080/callback"
-DEFAULT_USER_SCOPE = ("offline_access docx:document:readonly wiki:wiki:readonly "
-                      "drive:drive:readonly bitable:app:readonly")
+# Most Lark custom apps register their OAuth callback on port 3000 — default to it (override
+# with LARK_REDIRECT_URI to match whatever Redirect URL the app console actually has).
+DEFAULT_REDIRECT_URI = "http://localhost:3000/callback"
+# Request FULL capability in ONE consent so the user never has to re-grant piecemeal: both
+# the write scope (e.g. bitable:app) AND its readonly form, across Bitable / Drive / Docx /
+# Wiki, plus offline_access (for the refresh token). Lark simply grants whichever of these
+# the app actually has enabled in its Permissions list; extras are ignored, not fatal.
+DEFAULT_USER_SCOPE = (
+    "offline_access "
+    "bitable:app bitable:app:readonly "
+    "drive:drive drive:drive:readonly "
+    "docx:document docx:document:readonly "
+    "wiki:wiki wiki:wiki:readonly"
+)
 
 # Read modes + the capabilities that matter for "which mode reads docs better".
 TENANT, USER, AUTO = "tenant", "user", "auto"
+# Project default preference: USER. Writes are traceable to a real person and reads prefer
+# the user identity when available; lark_read.py still falls back to tenant for any doc the
+# user token can't see. Override with LARK_TOKEN_MODE in .plugin.env.
+DEFAULT_TOKEN_MODE = USER
 READ_CAPS = ("wiki.read", "docx.read", "drive.read")
 
 # Status values a capability can resolve to.
@@ -305,17 +320,32 @@ def resolve_read_mode(pref: str, caps_tenant: dict, caps_user: dict, avail: dict
 def get_read_token(domain: str, mode_arg: str | None = None) -> tuple[str, str, str]:
     """For lark_read.py: return (token, mode_used, err) for the requested/resolved mode.
 
-    Resolution: explicit mode_arg → state read_mode → env LARK_TOKEN_MODE → tenant.
+    Resolution: explicit mode_arg → state read_mode → env LARK_TOKEN_MODE → user (default).
     """
     avail = available_modes()
     mode = (mode_arg or "").strip().lower()
     if mode not in (TENANT, USER):
-        mode = _state_read_mode() or env_str("LARK_TOKEN_MODE", AUTO).strip().lower()
+        mode = _state_read_mode() or env_str("LARK_TOKEN_MODE", DEFAULT_TOKEN_MODE).strip().lower()
     if mode not in (TENANT, USER):
-        # unresolved 'auto' without a cached decision → prefer an available mode, tenant first
-        mode = TENANT if avail.get(TENANT) else (USER if avail.get(USER) else TENANT)
+        # unresolved 'auto' without a cached decision → prefer user (default), else tenant
+        mode = USER if avail.get(USER) else (TENANT if avail.get(TENANT) else USER)
     token, _exp, err = (get_user_token(domain) if mode == USER else get_tenant_token(domain))
     return token, mode, err
+
+
+def get_write_token(domain: str) -> tuple[str, str, str]:
+    """For any CREATE/UPDATE on Lark (log-bug, update-board): return (token, "user", err).
+
+    Writes are MANDATORY user mode so every record is attributable to a real person (audit
+    trail) — a tenant/app token would log the change as the bot. There is NO tenant fallback
+    on write: if the user token is unavailable the caller must stop and run
+    `/qa:auth-lark --login`, not silently write as the app.
+    """
+    if not available_modes().get(USER):
+        return "", USER, ("write requires a USER token (audit trail) — none configured. "
+                          "Run /qa:auth-lark --login to grant one, then retry.")
+    token, _exp, err = get_user_token(domain)
+    return token, USER, err
 
 
 def other_mode(mode: str) -> str:
@@ -524,10 +554,11 @@ def run(requested: list[str], command: str | None, write: bool,
     if not avail[TENANT] and not avail[USER]:
         return 2, _no_creds_error()
 
-    # Persist the preference if the caller set one.
-    pref = (pref_override or env_str("LARK_TOKEN_MODE", AUTO)).strip().lower()
+    # Persist the preference if the caller set one. Default = user (writes traceable; reads
+    # prefer the real person, with tenant fallback in lark_read.py).
+    pref = (pref_override or env_str("LARK_TOKEN_MODE", DEFAULT_TOKEN_MODE)).strip().lower()
     if pref not in (AUTO, TENANT, USER):
-        pref = AUTO
+        pref = DEFAULT_TOKEN_MODE
 
     modes: dict = {}
     errors: dict = {}
@@ -624,11 +655,11 @@ def run_login(code: str | None, redirect_uri: str | None, scope: str | None,
 
     redirect_warning = None
     if not redirect_explicit:
-        redirect_warning = (f"⚠️  Đang dùng redirect_uri mặc định {DEFAULT_REDIRECT_URI}. Giá trị "
-                            "này PHẢI khớp ĐÚNG một Redirect URL đã đăng ký trong app console "
-                            "(Security Settings → Redirect URLs). Nếu app bạn đăng ký URL khác "
-                            "(vd :3000/callback), đặt LARK_REDIRECT_URI trong .plugin.env, nếu "
-                            "không sẽ gặp lỗi 20029.")
+        redirect_warning = (f"⚠️  Đang dùng redirect_uri mặc định {DEFAULT_REDIRECT_URI} (port "
+                            "3000). Giá trị này PHẢI khớp ĐÚNG một Redirect URL đã đăng ký trong "
+                            "app console (Security Settings → Redirect URLs). Nếu app bạn đăng ký "
+                            "URL/port khác (vd :8080/callback), đặt LARK_REDIRECT_URI trong "
+                            ".plugin.env, nếu không sẽ gặp lỗi 20029.")
 
     if not code:
         url = oauth_authorize_url(domain, app_id, redirect_uri, scope)
@@ -649,7 +680,7 @@ def run_login(code: str | None, redirect_uri: str | None, scope: str | None,
         env_path = find_env_file()
         if env_path:
             _upsert_env_key(env_path, "LARK_USER_REFRESH_TOKEN", refresh)
-            _upsert_env_key(env_path, "LARK_TOKEN_MODE", env_str("LARK_TOKEN_MODE", AUTO))
+            _upsert_env_key(env_path, "LARK_TOKEN_MODE", env_str("LARK_TOKEN_MODE", DEFAULT_TOKEN_MODE))
             _upsert_env_key(env_path, "LARK_REDIRECT_URI", redirect_uri)  # remember what worked
         os.environ["LARK_USER_REFRESH_TOKEN"] = refresh
         os.environ["LARK_REDIRECT_URI"] = redirect_uri
