@@ -39,8 +39,10 @@ Parse `$ARGUMENTS`:
 Create `results/<feature-name>/ui-compare/{figma,app,pairs,diffs}/`.
 
 ## Step 1 — Engine gate (the local model)
-Run **skill `ui-engine-check`** → resolve `venv_python` + `config_path`.
-- `READY` → continue. Tell the user: *"UI engine sẵn sàng (opencv … / scikit-image …)"*.
+Run **skill `ui-engine-check`** → resolve `venv_python` + `config_path` + `ocr_backend`.
+- `READY` → continue. Tell the user: *"UI engine sẵn sàng (opencv …, OCR <tesseract|rapidocr|tắt>)"*.
+  If `ocr_backend` = `none`, **text comparison is OFF** — note it (only color/font/layout checked) and
+  suggest installing Tesseract `vie` via `/qa:ui-engine-install` for the text-vs-design check.
 - `NOT-INSTALLED` / `NEEDS-DEPS` → **ask the user** to install via the install-helper
   **`/qa:ui-engine-install`** (one-time, ~30–60s). On consent, run it, then re-check → `READY`.
   On decline → offer the non-CV fallback (AI eyeballs Figma vs app screenshots, higher token cost) or stop.
@@ -53,7 +55,10 @@ Two parallel reads of the SAME Figma URL:
    python3 ${CLAUDE_PLUGIN_ROOT}/scripts/figma_export.py export --url "<figma-url>" \
      --out results/<feature-name>/ui-compare/figma --scale 2 --json
    ```
-   It writes `figma/fm_<idx>-<slug>.png` per frame + `figma/manifest.json` (index · node-id · name).
+   It writes `figma/fm_<idx>-<slug>.png` per frame + `figma/manifest.json` (index · node-id · name)
+   **and `figma/text-styles.json`** — the exact design TEXT oracle (each TEXT node's content + color +
+   font + weight + size + bbox), keyed by the same slug. This is what the text layer compares the app's
+   OCR'd text against (catch a changed static label, ignore dynamic values).
    Needs `FIGMA_TOKEN` in `.plugin.env` — if missing/invalid (exit 2), tell the user to add a Figma
    personal access token (Figma → Settings → Security), then retry. TLS error → `/qa:doctor --fix`.
 2. **Structured summary + tracking** — spawn agent **`figma-reader`** (`figma_link`,
@@ -83,19 +88,26 @@ frame** in the screen list, in order:
 > needed later for FAIL screens (downscale via `scripts/downscale_image.py` first).
 
 ## Step 4 — Compare every pair on the LOCAL engine — skill `exploratory-ui-method`
-Hand `feature`, `platform`, `language`, `venv_python`, `config_path`, and the paired screen list to
-**skill `exploratory-ui-method`**. It drives **skill `ui-visual-compare`** once per pair
-(`<venv_python> scripts/ui_compare.py …`), each emitting `pairs/<idx>.json` + a `model-log.jsonl`
-line + a `diffs/<idx>-heatmap.png`. The AI reads only the small verdict JSONs (and the heatmap for
-FAIL screens) — color/SSIM/hash math stays local.
+Hand `feature`, `platform`, `language`, `venv_python`, `config_path`, `ocr_backend`, and the paired
+screen list to **skill `exploratory-ui-method`**. It drives **skill `ui-visual-compare`** once per
+pair (`<venv_python> scripts/ui_compare.py …`). When `ocr_backend` ≠ none, ALSO pass the text layer
+args so each call does color/font/layout **and** the text-vs-design check in one go:
+`--design-text results/<feature-name>/ui-compare/figma/text-styles.json --design-slug fm_<idx>-<slug>
+--ocr-langs vie+eng` (skill **`ui-text-compare`** + rule [ui-text-rules.md](../rules/ui-text-rules.md)).
+Each pair emits `pairs/<idx>.json` (typed findings incl. `text.*`) + a `model-log.jsonl` line + a
+`diffs/<idx>-heatmap.png`. The AI reads only the small JSONs (and the heatmap for FAIL screens) — all
+CV/OCR math stays local.
 
 ## Step 5 — UI-conformance report + GATE — skill `exploratory-ui-method`
 The same skill aggregates the verdicts into
-`results/<feature-name>/ui-conformance-report-<ddMMMyyyy>.md` (configured language): overview +
-per-screen verdict table (ΔE mean/p95, SSIM, hist) + **🐛 design deviations** (`[APP-BUG]`, with
-expected token/color vs actual + heatmap) + ✅PASS / ⚠️WARN / ❓NEEDS-TRIAGE + a **model-efficiency
-summary** from `model-log.jsonl`. Append each `[APP-BUG]` to `results/bug-summary.md`.
-- 🔴 **Has design deviation** → deliverable = report; suggest **`/qa:log-bug from <feature-name>`**.
+`results/<feature-name>/ui-conformance-report-<ddMMMyyyy>.md` (configured language) **in PLAIN
+LANGUAGE per [ui-conformance-report-template.md](../rules/ui-conformance-report-template.md)** —
+each bug reads like *"Design: text 'Products', chữ #000000, nền #FFFFFF, font Arial Regular; Thực tế:
+'Product', chữ #909090, nền #393939, font giống Times"*, NOT raw SSIM/ΔE numbers (those stay in
+`pairs/*.json` + `model-log.jsonl`). Apply the static-vs-dynamic text rule. Structure: per-screen
+overview table + **🐛 Lỗi cần sửa** (grouped, design vs thực tế, heatmap) + ✅ Đạt / ❓ NEEDS-TRIAGE.
+Append each `[APP-BUG]` to `results/bug-summary.md`.
+- 🔴 **Has deviation/label bug** → deliverable = report; suggest **`/qa:log-bug from <feature-name>`**.
 - 🟢 **All PASS** → the UI matches the design.
 
 ## Step 6 — Finish

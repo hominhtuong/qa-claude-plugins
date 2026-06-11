@@ -191,7 +191,17 @@ def _check_ui_engine() -> None:
     if s == "READY":
         pkgs = state.get("packages", {})
         ver = pkgs.get("cv2") or "?"
+        ocr = state.get("ocr_backend", "none")
         print(f"· [ok]   ui-engine OpenCV {ver} (local screenshot-vs-Figma engine for /qa:exploratory-ui)")
+        if ocr and ocr != "none":
+            extra = "" if ocr == "tesseract" else " (rapidocr fallback — for best Vietnamese add tesseract `vie`)"
+            print(f"· [ok]   ui-ocr    {ocr} (text-vs-design comparison ON){extra}")
+        else:
+            print("· [warn] ui-ocr    none — text comparison OFF. " + _install_hint(
+                "brew install tesseract tesseract-lang",
+                "winget install UB-Mannheim.TesseractOCR (add Vietnamese data)",
+                "sudo apt install tesseract-ocr tesseract-ocr-vie") +
+                "  (or rapidocr installs via /qa:ui-engine-install)")
     else:
         print("· [warn] ui-engine not installed (only needed for /qa:exploratory-ui). "
               "Install on demand with /qa:ui-engine-install.")

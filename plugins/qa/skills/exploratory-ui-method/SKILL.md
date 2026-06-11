@@ -21,9 +21,10 @@ image **only** for the screens the engine flagged. Metric/threshold reference:
 
 ## Inputs (from the command)
 - `feature` (folder slug, no diacritics), `platform` (web/android/ios), resolved output `language`.
-- Engine `venv_python` + `config_path` (from `ui-engine-check`, state READY).
-- Figma frames on disk: `results/<feature>/ui-compare/figma/fm_*.png` + `figma/manifest.json`
-  (from `scripts/figma_export.py`), and the `figma-reader` summary for human screen names/specs.
+- Engine `venv_python` + `config_path` + `ocr_backend` (from `ui-engine-check`, state READY).
+- Figma frames on disk: `results/<feature>/ui-compare/figma/fm_*.png` + `figma/manifest.json` +
+  **`figma/text-styles.json`** (the exact design TEXT oracle) (from `scripts/figma_export.py`), and
+  the `figma-reader` summary for human screen names/specs.
 - App screenshots on disk: `results/<feature>/ui-compare/app/ss_*.png` (captured by the command via
   the platform MCP, optionally after the `ui-seed-data` `--seed` step).
 
@@ -37,14 +38,20 @@ image **only** for the screens the engine flagged. Metric/threshold reference:
    - App screenshot with no Figma frame → extra/undesigned screen → note it; don't compare.
 
 2. **Compare every pair** via skill [ui-visual-compare](../ui-visual-compare/SKILL.md) — one
-   `ui_compare.py` run per pair, each producing `pairs/<id>.json` + a `model-log.jsonl` line + a
-   heatmap. Process pairs sequentially (or batch the shell calls); **do not Read the screenshots** —
-   collect the small verdict JSONs.
+   `ui_compare.py` run per pair. **When `ocr_backend` ≠ none, also pass the text layer**
+   (`--design-text figma/text-styles.json --design-slug fm_<id>… --ocr-langs vie+eng`) so the same
+   call does color/font/layout AND text-vs-design (skill [ui-text-compare](../ui-text-compare/SKILL.md)).
+   Each produces `pairs/<id>.json` + a `model-log.jsonl` line + a heatmap. **Do not Read the
+   screenshots** — collect the small verdict JSONs.
 
 3. **Read the verdicts** (`pairs/*.json`) — for each screen lead with `summary_by_type` (which of
-   `color.background` / `color.text` / `typography.weight` / `typography.size` / `typography.family`
-   / `layout.shift` failed, in how many regions) then `findings[]` for the quotable specifics. Bucket
-   each screen PASS / WARN / FAIL.
+   `text.mismatch` / `color.background` / `color.text` / `typography.weight` / `typography.size` /
+   `typography.family` / `layout.shift` / `layout.align` failed, in how many regions) then `findings[]`
+   for the quotable specifics. Bucket each screen PASS / WARN / FAIL.
+   - **Text findings**: apply rule [ui-text-rules.md](../../rules/ui-text-rules.md) — a `text.mismatch`
+     with `likely_dynamic=false` on a STATIC label (title/button/field label) → `[APP-BUG]` (cite
+     *design "Products" → app "Product"*); `likely_dynamic=true` (data/number/name) → **ignore the
+     content**. Guard against OCR noise on 1–2 char/accent diffs (verify on the image).
    - For **FAIL** screens only: Read the **heatmap** (`diffs/<id>-heatmap.png`, downscale first if
      >2000px via `scripts/downscale_image.py`) to confirm + localize, and — when a design token
      baseline exists — cross-check the expected color/type against the design system per
@@ -59,21 +66,22 @@ image **only** for the screens the engine flagged. Metric/threshold reference:
    %, size %, SSIM) · expected (token/Figma) vs actual · heatmap path as evidence. Quote the finding's
    `detail` string directly — it's already phrased.
 
-5. **Write the UI-conformance report** `results/<feature>/ui-conformance-report-<ddMMMyyyy>.md` in
-   the configured output language (default Vietnamese with diacritics — see
-   [output-language.md](../../rules/output-language.md)). Structure:
-   - **Tổng quan**: feature, platform, device/viewport, engine versions, # screens, PASS/WARN/FAIL counts.
-   - **Bảng đối chiếu** (one row per screen): `Màn | fm/ss id | Verdict | ΔE mean | SSIM | Thuộc tính sai (nền/chữ/đậm/cỡ/font/bố cục) | Ghi chú`.
-   - **🐛 Design deviations** (`[APP-BUG]`): **grouped by attribute** so dev/designer sees the pattern —
-     e.g. *Màu nền*, *Màu chữ*, *Độ đậm (weight)*, *Cỡ chữ (size)*, *Font family*, *Bố cục*. Per finding:
-     màn + vùng (`giữa-trái`), expected vs actual (hex / %), ảnh heatmap `diffs/<id>-heatmap.png`.
-     (Use the bug-report template fields where useful:
-     [exploratory-bug-report-template.md](../../rules/exploratory-bug-report-template.md).)
-   - **✅ Đạt (PASS)** + **⚠️ Cận ngưỡng (WARN)** lists.
-   - **❓ NEEDS-TRIAGE**: unpaired screens, missing design baseline, seeding skipped.
-   - **Hiệu quả model**: a short summary derived from `model-log.jsonl` (counts by verdict, mean ΔE
-     across screens, which thresholds fired) — this is the data the team uses to judge/tune the engine.
-   Append each `[APP-BUG] design deviation` to the cross-feature register `results/bug-summary.md`.
+5. **Write the UI-conformance report** `results/<feature>/ui-conformance-report-<ddMMMyyyy>.md` —
+   **PLAIN LANGUAGE, NOT technical**, following
+   [ui-conformance-report-template.md](../../rules/ui-conformance-report-template.md), in the configured
+   output language (default Vietnamese with diacritics — [output-language.md](../../rules/output-language.md)).
+   > 🎯 **The bar:** anyone reading a bug must instantly get it and be able to log it. **Do NOT put raw
+   > SSIM/ΔE/stroke numbers in the report** — translate them: *"Design: text 'Products', chữ #000000,
+   > nền #FFFFFF, font Arial Regular; Thực tế: 'Product', chữ #909090, nền #393939, font giống Times."*
+   > The technical numbers stay in `pairs/*.json` + `model-log.jsonl` (for tuning the engine).
+   - **Tổng quan**: feature, platform, device/viewport, OCR backend, # screens, Đạt/Có-lỗi counts.
+   - **Bảng tổng quan từng màn**: `Màn | Kết luận (🟢/🟡/🔴) | Vấn đề chính (ngắn)`.
+   - **🐛 Lỗi cần sửa**: one `### Lỗi N` per issue with **Design:** (exact Figma tokens — text/màu/nền/
+     font/cỡ) vs **Thực tế:** (app text + measured hex + font class) + **Sai:** (thuộc tính nào) + 📷
+     heatmap path. Make each block `/qa:log-bug`-ready (see template + the bug-report-import mapping).
+   - **✅ Đã kiểm tra — khớp** + **❓ Cần xác nhận (NEEDS-TRIAGE)** (unpaired screens, no baseline, OCR off,
+     low-confidence font, seeding skipped).
+   Append each confirmed `[APP-BUG]` to the cross-feature register `results/bug-summary.md`.
 
 6. **GATE decision** (mirrors /qa:exploratory):
    - 🔴 **Has `[APP-BUG]` design deviation** → deliverable = this report for dev/designer. Suggest

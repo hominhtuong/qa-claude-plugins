@@ -12,8 +12,18 @@ project's own dependencies. Everything heavy runs locally; the AI later reads on
 verdicts. **You run the script — the user does not touch a terminal.**
 
 > What gets installed (≈100–200MB of prebuilt wheels, ~30–60s):
-> `numpy · opencv-python-headless · scikit-image · Pillow · imagehash`
+> `numpy · opencv-python-headless · scikit-image · Pillow · imagehash` (core CV) +
+> `rapidocr-onnxruntime · pytesseract` (OCR for the text-vs-design layer — best-effort).
 > Location: `<project>/.claude/qa-claude/ui-engine/venv/` · Config: `<project>/.claude/qa-claude/ui-engine.config.json`
+
+> **OCR for text comparison (so it can catch a changed label like Products→Product):** the engine
+> auto-uses the best available backend. `rapidocr-onnxruntime` (pip, self-contained) installs with the
+> engine so text comparison works out of the box. For the **best Vietnamese (with diacritics)**, also
+> install the **Tesseract** binary + the `vie` language pack — the engine prefers it automatically:
+> - **macOS:** `brew install tesseract tesseract-lang`
+> - **Windows:** `winget install UB-Mannheim.TesseractOCR` (pick Vietnamese during install, or add `vie.traineddata`)
+> - **Linux:** `sudo apt install tesseract-ocr tesseract-ocr-vie`
+> Tesseract is OPTIONAL — without it, rapidocr handles text (Vietnamese diacritics a bit weaker).
 
 ## Step 0 — Resolve intent
 - `--check` (or no args and you just want status) → only report state, do not install.
