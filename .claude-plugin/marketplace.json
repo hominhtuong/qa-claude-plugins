@@ -5,7 +5,7 @@
     "email": "support@mituultra.com"
   },
   "description": "Open-source Claude Code plugin for QA/QC engineers, QA Managers and Product Ops using AI: scaffold a standard POM project from scratch (one command → a compiling Playwright-Web or Appium-App framework + example test), web/mobile automation, test-case generation, exploratory testing, review, plus quality management (metrics dashboard, deep bug-board analysis, Go/No-Go release gate, requirement traceability, release notes, risk matrix, RICE triage, SLA compliance, story-point estimation, bug explainer/dedup). Install once, use across projects; commands are namespaced as /qa:<command>. Automation and manual QA have distinct command names; automation commands auto-route by platform (web/android/ios).",
-  "version": "0.0.22",
+  "version": "0.0.23",
   "plugins": [
     {
       "name": "qa",

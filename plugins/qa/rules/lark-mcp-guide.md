@@ -22,17 +22,27 @@ had to switch modes. The MCP sections below are reference/back-compat only.
 
 Two ways to reach a doc, both configured in `.claude/qa-claude/.plugin.env` and verified
 by `/qa:auth-lark`:
-- **tenant** (app token) — `LARK_APP_ID`+`LARK_APP_SECRET`; the DOC must be shared with the APP. Default.
-- **user** (UAT) — OAuth login (`/qa:auth-lark --login`); the DOC must be visible to the USER.
+- **user** (UAT) — OAuth login (`/qa:auth-lark --login`); the DOC must be visible to the USER. **Project default** (`LARK_TOKEN_MODE=user`) — reads + writes are attributable to a real person.
+- **tenant** (app token) — `LARK_APP_ID`+`LARK_APP_SECRET`; the DOC must be shared with the APP. Fallback for docs the user can't see.
 
-How commands/skills know which to use — they don't need to decide; `lark_read.py` resolves
-it. The resolution is recorded so anything can inspect it:
-- **env** (`.plugin.env`): `LARK_TOKEN_MODE` (preference: auto|tenant|user), `LARK_READ_MODE`
+**Writes are MANDATORY user mode.** Any CREATE/UPDATE on Lark (a `/qa:log-bug` record, a
+`/qa:update-board` change) MUST use the **user token** (`useUAT: true`, or `get_write_token()`
+in Python) so the record shows WHO did it. The app/tenant token logs the change as the bot —
+do NOT use it to write. If no user token is configured, STOP and run `/qa:auth-lark --login`;
+never silently fall back to the app token for a write.
+
+Auth requests **FULL** capability (read **and** write scopes) in one consent so you never
+re-grant piecemeal; the OAuth redirect defaults to port **3000** (`http://localhost:3000/callback`).
+
+How commands/skills know which to use for READS — they don't need to decide; `lark_read.py`
+resolves it. The resolution is recorded so anything can inspect it:
+- **env** (`.plugin.env`): `LARK_TOKEN_MODE` (preference: user(default)|auto|tenant), `LARK_READ_MODE`
   (resolved effective mode), `LARK_APP_CAPABILITIES`, `LARK_USER_CAPABILITIES`.
 - **state** (`.claude/qa-claude/lark-auth.state.json`): `read_mode`, `read_mode_reason`, and
   `modes.{tenant,user}.capabilities` (per-mode ✅/❌ map).
-- **auto** preference picks the mode with more granted read scopes (tie → tenant); `lark_read.py`
-  also **falls back** to the other configured mode for any doc the chosen one is denied.
+- **user** preference uses the user token first; **auto** picks the mode with more granted read
+  scopes (tie → tenant). Either way `lark_read.py` **falls back** to the other configured mode
+  for any doc the chosen one is denied.
 
 If a read returns an auth/permission error, run `/qa:auth-lark` (or `--login` for user mode)
 to fix scopes — do NOT hardcode tokens.
