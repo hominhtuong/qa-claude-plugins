@@ -17,6 +17,7 @@ Miễn phí & mở cho **tất cả mọi người**, cài một lần, dùng ch
   - [Automation](#automation)
   - [Manual QA](#manual-qa)
   - [Quản lý chất lượng & báo cáo](#quản-lý-chất-lượng--báo-cáo-qa-manager--product-ops)
+- [Đối chiếu UI với design (exploratory-ui)](#đối-chiếu-ui-thực-tế--design-figma--qaexploratory-ui)
 - [Cách hoạt động](#cách-hoạt-động)
 - [Tích hợp tuỳ chọn](#tích-hợp-tuỳ-chọn)
 - [Đóng góp](#đóng-góp)
@@ -85,7 +86,7 @@ Plugin **tự đính kèm** các MCP server cần cho automation — bật plugi
 
 | Server | Dùng cho | Cấu hình |
 |---|---|---|
-| **figma** | đọc design (exploratory, design-conformance) | sẵn (http) — chỉ cần đăng nhập Figma khi được hỏi |
+| **figma** | đọc design (exploratory, **exploratory-ui**, design-conformance) | sẵn (http) — chỉ cần **đăng nhập Figma** khi được hỏi, **không cần token** |
 | **playwright** | driver web | sẵn (`npx @playwright/mcp`) |
 | **appium** | driver iOS/Android (port 4723) | sẵn (`npx appium-mcp`) — vẫn cần chạy Appium server qua `start-appium.sh` |
 | **Lark** | đọc doc/Bitable | ❌ **không** qua MCP — dùng Python `lark_read.py` đọc `.plugin.env` (dual-mode tenant/user, tránh lỗi token). Ai muốn MCP thì tự thêm `@larksuiteoapi/lark-mcp` vào `.mcp.json` project (xem [lark-mcp-guide](plugins/qa/rules/lark-mcp-guide.md)). |
@@ -102,6 +103,8 @@ Plugin **tự đính kèm** các MCP server cần cho automation — bật plugi
 |---|---|
 | `/qa:scaffold [--app\|--web]` | **Tạo project automation chuẩn** từ đầu (khung POM: thư mục + pom/Makefile/suites/configs + 1 test login mẫu biên dịch được). Chạy 1 lần trên repo trống; sau đó chỉ cần `/qa:plan-tests`. Không ghi đè code có sẵn. |
 | `/qa:setup` | **Cài plugin vào project** (1 lần): Claude tự chạy script tạo `.claude/qa-claude/` + check toolchain. Không cần terminal. |
+| `/qa:ui-engine-install` | Cài **engine CV+OCR local** (venv riêng: opencv + scikit-image + tesseract/rapidocr) cho `/qa:exploratory-ui`. 1 lần/máy, tự gợi ý khi cần. |
+| `/qa:auth-figma` | *(Hầu như không cần)* Lưu Figma token cho `/qa:exploratory-ui` khi chạy **headless/no-MCP**: AI mở trang token, bạn dán vào, AI validate + tự ghi `.plugin.env`. Mặc định đọc Figma qua **MCP, không cần token**. |
 | `/qa:help [chủ đề]` | Giới thiệu & hướng dẫn dùng plugin, liệt kê command/skill. |
 | `/qa:status` | Tóm tắt nhanh trạng thái project (git, device, Appium, coverage). |
 | `/qa:ask <câu hỏi>` | Hỏi đáp về codebase / kiến trúc / cấu hình / cách test (chỉ trả lời). |
@@ -114,6 +117,7 @@ Plugin **tự đính kèm** các MCP server cần cho automation — bật plugi
 |---|---|
 | `/qa:sitemap [feature] [platform]` | **Khám phá & dựng sitemap**: đi hết app/web (hoặc chỉ 1 feature, ví dụ `/qa:sitemap home`), khai báo **element của từng màn** (tên + locator bền vững) và cập nhật bản đồ điều hướng vào thư mục `sitemap/`. **Chỉ map — KHÔNG viết test, KHÔNG bắt bug, KHÔNG sinh Page Object.** Chạy lại sẽ *bổ sung* (merge theo tên element), không tạo trùng. |
 | `/qa:exploratory <feature> [platform] [--spec <file\|url\|figma>]` | Khám phá **toàn bộ** màn hình như QA senior, **săn bug đến cùng** — gặp bug **không dừng**, ghi nhận + triage rồi đi tiếp đến hết feature; đối chiếu **spec/Figma** nếu có → bug *spec-mismatch*; chụp bằng chứng. **Xong mới kết luận (GATE):** có `[APP-BUG]` → xuất **bug report** gửi dev (🚦 không viết test cho phần app sai); **sạch** → khai báo elements/Screen → sẵn cho `/qa:plan-tests`. |
+| `/qa:exploratory-ui <feature>: <figma-url> [--seed]` | **Đối chiếu UI thực tế với design Figma** bằng **engine CV+OCR chạy local** (chi tiết bên dưới): so **nội dung text** (bắt label sai như Products≠Product, bỏ qua value động), **màu nền vs màu chữ**, **font** (family/đậm-nhạt/cỡ), **bố cục/canh lề** — máy xử lý nặng, AI chỉ đọc JSON nhỏ. Xuất **report dễ đọc** (Design vs Thực tế), đủ để `/qa:log-bug from <feature>`. Đọc Figma qua **MCP, không cần token**. |
 | `/qa:plan-tests <feature> [--stop-on-bug]` | Chạy exploratory **sâu** (đủ ngữ cảnh chung toàn app + đủ biến thể của entity) rồi thiết kế kế hoạch test automation. **Mặc định: vẫn lên plan dù có bug** — element nào còn khai báo + action được thì đưa vào plan dưới dạng case `KNOWN-BUG` (assert kỳ vọng đúng theo spec, sẽ fail tới khi dev sửa); phần không khai báo/action được liệt kê là *Blocked*. Bug report vẫn xuất song song. Thêm `--stop-on-bug` để **dừng ở bug report** (chỉ lên plan khi app sạch). |
 | `/qa:find-elements <màn>` | Trích locator bền vững (tự rẽ web/android/ios). |
 | `/qa:cook <plan\|yêu cầu>` | Viết Page Object + test code theo design pattern. |
@@ -172,6 +176,37 @@ Mọi output gom về thư mục **`results/`** trong project:
 | Report quản lý & ops (dashboard / release gate / traceability / release notes / risk / triage / SLA / bug analysis) | `results/quality-report/`, `results/release-gate/<release>/`, `results/release-notes/<release>/`, `results/bug-analysis/`, `results/<context>/` (risk/triage/sla/traceability) |
 
 `results/tests/` (artifact mỗi lần chạy) được tự thêm vào `.gitignore` khi chạy `setup`.
+
+## Đối chiếu UI thực tế ⇆ design Figma — `/qa:exploratory-ui`
+
+Kiểm tra **giao diện app/web build ra có giống design Figma không** — và **sai như thế nào** — bằng một **engine CV+OCR chạy local**. Triết lý: **máy local làm hết phần nặng (đọc/so ảnh), AI chỉ đọc kết quả JSON nhỏ** → tiết kiệm token tối đa.
+
+**Nó so cái gì** (mỗi màn, theo từng vùng, đều do model local trả kết quả):
+
+| Hạng mục | Bắt được | Cách làm (local) |
+|---|---|---|
+| **Nội dung text** | label tĩnh sai (vd design *Products* → app *Product*); **bỏ qua value động** (data/số/tên) | OCR app + so với text design (qua Figma MCP hoặc OCR ảnh design); heuristic tĩnh/động + rule cho AI |
+| **Màu sắc** | sai **màu nền** và **màu chữ** (tách riêng, kèm mã hex) | tách nền/chữ bằng k-means + khoảng cách màu CIEDE2000 (theo cảm nhận mắt người) |
+| **Font** | khác **family** (serif/sans), **đậm/nhạt**, **cỡ chữ** | stroke-width (đậm), chiều cao glyph (cỡ), edge-orientation (family) |
+| **Bố cục** | lệch layout, **canh lề** sai | SSIM cục bộ + so vị trí khối/text |
+
+**Cách dùng:**
+
+```text
+/qa:exploratory-ui Hóa đơn: https://www.figma.com/design/....?node-id=15436-78784
+```
+
+1. **Lần đầu**: `/qa:ui-engine-install` cài engine (venv riêng, ~30–60s; để OCR tiếng Việt có dấu tốt nhất, cài thêm Tesseract `vie` — lệnh in sẵn theo OS). Hoặc cứ chạy `/qa:exploratory-ui`, nó tự gợi ý cài.
+2. **Figma không cần token** — đọc design qua **Figma MCP** (đăng nhập Figma khi được hỏi). *(Chỉ môi trường headless/no-MCP mới cần token → `/qa:auth-figma` lo hộ.)*
+3. Plugin mở app (Appium) / web (Playwright) qua MCP, chụp từng màn, **so local**, rồi xuất report.
+
+**Report dễ đọc, đủ để log bug ngay** (không phơi số kỹ thuật SSIM/ΔE):
+
+> **Lỗi 1** — Màn Hóa đơn, tiêu đề. **Design:** text "Products", chữ #000000, nền #FFFFFF, font Arial Regular. **Thực tế:** "Product", chữ #909090, nền #393939, font giống Times. **Sai:** nội dung chữ, màu chữ, màu nền, font. 📷 *(ảnh heatmap)*
+
+→ Sau đó `/qa:log-bug from <feature>` để đẩy lên board. Output ở `results/<feature>/ui-compare/` (ảnh design/app, JSON từng cặp, `model-log.jsonl` để theo dõi độ chính xác engine) + report `ui-conformance-report-<ngày>.md`.
+
+> **Skill nội bộ** (không gọi trực tiếp): `ui-engine-check` (kiểm tra engine), `ui-visual-compare` (so 1 cặp ảnh), `ui-text-compare` (so text), `ui-seed-data` (`--seed`: tạo data giống design trước khi chụp), `exploratory-ui-method` (điều phối + report). Ngưỡng so sánh chỉnh được ở `.claude/qa-claude/ui-engine.config.json`.
 
 ## Cách hoạt động
 

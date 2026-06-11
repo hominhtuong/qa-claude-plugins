@@ -22,8 +22,9 @@ image **only** for the screens the engine flagged. Metric/threshold reference:
 ## Inputs (from the command)
 - `feature` (folder slug, no diacritics), `platform` (web/android/ios), resolved output `language`.
 - Engine `venv_python` + `config_path` + `ocr_backend` (from `ui-engine-check`, state READY).
-- Figma frames on disk: `results/<feature>/ui-compare/figma/fm_*.png` + `figma/manifest.json` +
-  **`figma/text-styles.json`** (the exact design TEXT oracle) (from `scripts/figma_export.py`), and
+- Figma frames on disk: `results/<feature>/ui-compare/figma/fm_*.png` + `figma/manifest.json`
+  (rendered via the **Figma MCP** `get_screenshot`+curl — no token — or the `figma_export.py` REST
+  fallback), **optionally** `figma/text-styles.json` (exact design text oracle, token/REST path), and
   the `figma-reader` summary for human screen names/specs.
 - App screenshots on disk: `results/<feature>/ui-compare/app/ss_*.png` (captured by the command via
   the platform MCP, optionally after the `ui-seed-data` `--seed` step).
@@ -38,9 +39,10 @@ image **only** for the screens the engine flagged. Metric/threshold reference:
    - App screenshot with no Figma frame → extra/undesigned screen → note it; don't compare.
 
 2. **Compare every pair** via skill [ui-visual-compare](../ui-visual-compare/SKILL.md) — one
-   `ui_compare.py` run per pair. **When `ocr_backend` ≠ none, also pass the text layer**
-   (`--design-text figma/text-styles.json --design-slug fm_<id>… --ocr-langs vie+eng`) so the same
-   call does color/font/layout AND text-vs-design (skill [ui-text-compare](../ui-text-compare/SKILL.md)).
+   `ui_compare.py` run per pair. **When `ocr_backend` ≠ none, also pass the text layer** — either
+   `--design-text figma/text-styles.json --design-slug fm_<id>…` (exact) or `--design-image
+   figma/fm_<id>….png` (token-free OCR of the design render) + `--ocr-langs vie+eng` — so the same call
+   does color/font/layout AND text-vs-design (skill [ui-text-compare](../ui-text-compare/SKILL.md)).
    Each produces `pairs/<id>.json` + a `model-log.jsonl` line + a heatmap. **Do not Read the
    screenshots** — collect the small verdict JSONs.
 

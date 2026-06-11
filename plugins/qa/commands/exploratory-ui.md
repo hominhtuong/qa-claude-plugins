@@ -48,26 +48,42 @@ Run **skill `ui-engine-check`** → resolve `venv_python` + `config_path` + `ocr
   On decline → offer the non-CV fallback (AI eyeballs Figma vs app screenshots, higher token cost) or stop.
 - `NEEDS-SETUP` → it self-heals (config rewrite, no download).
 
-## Step 2 — Read the Figma design → reference PNGs + summary
-Two parallel reads of the SAME Figma URL:
-1. **Render frames to files** (the CV reference images) — run:
-   ```bash
-   python3 ${CLAUDE_PLUGIN_ROOT}/scripts/figma_export.py export --url "<figma-url>" \
-     --out results/<feature-name>/ui-compare/figma --scale 2 --json
-   ```
-   It writes `figma/fm_<idx>-<slug>.png` per frame + `figma/manifest.json` (index · node-id · name)
-   **and `figma/text-styles.json`** — the exact design TEXT oracle (each TEXT node's content + color +
-   font + weight + size + bbox), keyed by the same slug. This is what the text layer compares the app's
-   OCR'd text against (catch a changed static label, ignore dynamic values).
-   Needs `FIGMA_TOKEN` in `.plugin.env` — if missing/invalid (exit 2), tell the user to add a Figma
-   personal access token (Figma → Settings → Security), then retry. TLS error → `/qa:doctor --fix`.
-2. **Structured summary + tracking** — spawn agent **`figma-reader`** (`figma_link`,
-   `output_file: results/<feature-name>/figma-tracking/figma-summary.md`,
-   `tracking_file: results/<feature-name>/figma-tracking/figma-tracking.md`). State the output
-   language in the prompt (Vietnamese → *"tất cả tiếng Việt PHẢI có dấu"*). This gives human screen
-   names + per-screen design notes (intended colors/states) for the report and for `--seed`.
+## Step 2 — Read the Figma design → reference PNGs (NO token by default)
+Get every design frame as a PNG **file** on disk (the CV baseline). **Prefer the Figma MCP — no
+token needed**; the REST script is only a fallback.
 
-Build the **screen list**: each Figma frame = one row `{idx, fm_file, node_id, name}` from the manifest.
+**A. DEFAULT — Figma MCP (no token; the user just logs in to Figma when prompted):**
+1. **List frames** — `ToolSearch("figma get_metadata")` → `mcp__figma__get_metadata(fileKey[, nodeId])`
+   (resolve `fileKey`+`nodeId` from the URL; `node-id` `-`→`:`). Get the frame node-ids + names under
+   the node (or top-level pages). Assign a stable `<idx>` + kebab `slug` per frame.
+2. **Render each frame to a file** — `ToolSearch("figma get_screenshot")` →
+   `mcp__figma__get_screenshot(fileKey, nodeId, maxDimension: 1600)`. It returns a **short-lived URL +
+   curl** (token-cheap). Save the PNG to a file — DON'T inline it:
+   ```bash
+   curl -sL "<screenshot-url>" -o results/<feature-name>/ui-compare/figma/fm_<idx>-<slug>.png
+   ```
+3. **Write `figma/manifest.json`** yourself: `{frames:[{index,node_id,name,slug,file}]}` (same shape
+   the script produces) so the comparator can pair frames.
+4. *(Optional exact text oracle, still no token)* — `mcp__figma__get_design_context(fileKey, nodeId)`
+   exposes the text + styles; you MAY extract them into `figma/text-styles.json`. If you skip this,
+   the text layer just OCRs the rendered `fm_*.png` instead (Step 4) — still catches label changes.
+
+**B. FALLBACK — REST script (only if the Figma MCP isn't available, e.g. headless/cron, OR you want
+the exact text/font oracle file):**
+```bash
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/figma_export.py export --url "<figma-url>" \
+  --out results/<feature-name>/ui-compare/figma --scale 2 --json
+```
+writes `fm_<idx>-<slug>.png` + `manifest.json` + `text-styles.json` (exact text/color/font/size/bbox).
+Needs `FIGMA_TOKEN` — if missing/invalid (exit 2), run **`/qa:auth-figma`** (assisted: it opens the
+Figma token page, the user pastes a token, you validate + save it). TLS error → `/qa:doctor --fix`.
+
+**Plus (both paths): structured summary** — spawn agent **`figma-reader`** (`figma_link`,
+`output_file: results/<feature-name>/figma-tracking/figma-summary.md`,
+`tracking_file: …/figma-tracking.md`). State the output language (Vietnamese → *"tất cả tiếng Việt
+PHẢI có dấu"*) → human screen names + design notes (intended colors/states) for the report and `--seed`.
+
+Build the **screen list**: each Figma frame = one row `{idx, fm_file, node_id, name, slug}` from the manifest.
 
 ## Step 3 — Open each screen on the app & capture (paired with the design)
 Open the driver for the locked platform: **web** → skill `navigate-web` (Playwright MCP) · **android|ios**
@@ -91,9 +107,13 @@ frame** in the screen list, in order:
 Hand `feature`, `platform`, `language`, `venv_python`, `config_path`, `ocr_backend`, and the paired
 screen list to **skill `exploratory-ui-method`**. It drives **skill `ui-visual-compare`** once per
 pair (`<venv_python> scripts/ui_compare.py …`). When `ocr_backend` ≠ none, ALSO pass the text layer
-args so each call does color/font/layout **and** the text-vs-design check in one go:
-`--design-text results/<feature-name>/ui-compare/figma/text-styles.json --design-slug fm_<idx>-<slug>
---ocr-langs vie+eng` (skill **`ui-text-compare`** + rule [ui-text-rules.md](../rules/ui-text-rules.md)).
+so each call does color/font/layout **and** the text-vs-design check in one go (skill
+**`ui-text-compare`** + rule [ui-text-rules.md](../rules/ui-text-rules.md)):
+- **exact text oracle exists** (`figma/text-styles.json` from the REST fallback / get_design_context)
+  → `--design-text …/figma/text-styles.json --design-slug fm_<idx>-<slug> --ocr-langs vie+eng`.
+- **otherwise (token-free, the default MCP path)** → `--design-image …/figma/fm_<idx>-<slug>.png
+  --ocr-langs vie+eng` — the engine OCRs the design render itself for the design text. Same result:
+  catch a changed static label (Products→Product), ignore dynamic values.
 Each pair emits `pairs/<idx>.json` (typed findings incl. `text.*`) + a `model-log.jsonl` line + a
 `diffs/<idx>-heatmap.png`. The AI reads only the small JSONs (and the heatmap for FAIL screens) — all
 CV/OCR math stays local.

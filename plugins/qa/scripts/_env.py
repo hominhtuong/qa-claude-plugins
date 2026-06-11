@@ -199,6 +199,57 @@ def ssl_help_text() -> str:
             "tạo CA bundle rồi đặt SSL_CERT_FILE trong .claude/qa-claude/.plugin.env:\n     " + export)
 
 
+def upsert_env_key(env_path: Path, key: str, value: str, comment: str = "") -> None:
+    """Set KEY=value in the plugin env file (add the line if absent), leaving the rest intact.
+
+    Shared helper so auth commands (/qa:auth-figma, …) can persist a credential the AI captured
+    without clobbering the user's other settings. Updates the first uncommented `KEY=` line if it
+    exists, else appends a new line (with an optional one-line comment) at the end.
+    """
+    lines = env_path.read_text(encoding="utf-8").splitlines() if env_path.is_file() else []
+    out, done = [], False
+    for ln in lines:
+        head = ln.strip().split("=", 1)[0].strip()
+        if head == key and not ln.strip().startswith("#"):
+            out.append(f"{key}={value}")
+            done = True
+        else:
+            out.append(ln)
+    if not done:
+        if out and out[-1].strip():
+            out.append("")
+        if comment:
+            out.append(f"# {comment}")
+        out.append(f"{key}={value}")
+    env_path.parent.mkdir(parents=True, exist_ok=True)
+    env_path.write_text("\n".join(out) + "\n", encoding="utf-8")
+
+
+def open_in_browser(url: str) -> bool:
+    """Best-effort open a URL in the user's default browser, cross-platform. Returns True on success.
+
+    Tries the stdlib `webbrowser` first, then the OS opener (macOS `open` / Windows `start` /
+    Linux `xdg-open`). Never raises — callers always also print the URL so the user can open it
+    manually if no GUI/browser is available (headless / remote).
+    """
+    try:
+        import webbrowser
+        if webbrowser.open(url):
+            return True
+    except Exception:  # noqa: BLE001
+        pass
+    import subprocess
+    import sys as _sys
+    try:
+        if _sys.platform == "darwin":
+            return subprocess.run(["open", url], capture_output=True).returncode == 0
+        if _sys.platform.startswith("win"):
+            return subprocess.run(["cmd", "/c", "start", "", url], capture_output=True).returncode == 0
+        return subprocess.run(["xdg-open", url], capture_output=True).returncode == 0
+    except Exception:  # noqa: BLE001
+        return False
+
+
 def env_bool(key: str, default: bool = False) -> bool:
     return str(os.environ.get(key, str(default))).strip().lower() == "true"
 

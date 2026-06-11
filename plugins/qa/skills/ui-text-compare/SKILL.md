@@ -16,16 +16,21 @@ changed label without false-flagging data that legitimately differs from the Fig
   `ocr_backend` ∈ {tesseract, rapidocr}). If `none`, text comparison is skipped — say so in the
   report (only color/font/layout were checked) and suggest installing Tesseract `vie` via
   `/qa:ui-engine-install`.
-- The **design text oracle**: `results/<feature>/ui-compare/figma/text-styles.json` (exact text +
-  color + font + size + bbox per Figma TEXT node), written by `scripts/figma_export.py export`
-  (or `text-styles`). Keyed by the same `fm_<idx>-<slug>` as the rendered PNGs.
+- A **design text source** — one of:
+  - **token-free (default):** the rendered design frame `figma/fm_<idx>-<slug>.png` (saved via the
+    Figma MCP `get_screenshot`) — the engine OCRs it for the design text (`--design-image`).
+  - **exact (optional):** `figma/text-styles.json` (exact text + color + font + size + bbox per Figma
+    TEXT node), from `figma_export.py export` (needs a token) or `get_design_context` — keyed by the
+    same `fm_<idx>-<slug>`. Pass it via `--design-text` for OCR-error-free design text + real font names.
 
 ## Procedure (per pair — runs inside the per-pair compare)
 
-1. The text layer is built into `ui_compare.py`: pass `--design-text <…/figma/text-styles.json>
-   --design-slug fm_<idx>-<slug> --ocr-langs vie+eng` alongside the normal compare args
-   (skill [ui-visual-compare](../ui-visual-compare/SKILL.md)). It OCRs the app screenshot, maps each
-   Figma TEXT node's bbox into the app's pixel space, finds the nearest app text line, and emits:
+1. The text layer is built into `ui_compare.py`: pass the design-text source + `--ocr-langs vie+eng`
+   alongside the normal compare args (skill [ui-visual-compare](../ui-visual-compare/SKILL.md)) —
+   either `--design-text …/text-styles.json --design-slug fm_<idx>-<slug>` (exact) **or**
+   `--design-image …/figma/fm_<idx>-<slug>.png` (token-free OCR of the design render). It OCRs the app
+   screenshot, maps each design text's bbox into the app's pixel space, finds the nearest app text
+   line, and emits:
    - `text.mismatch` — design text ≠ app text. Carries `design_text`, `app_text`, `similarity`,
      `likely_dynamic`, and the design tokens (`design_color/font/weight/size`).
    - `text.missing` — design has a label but the app shows no text there.
