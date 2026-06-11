@@ -48,6 +48,12 @@ PACKAGES = ["numpy", "opencv-python-headless", "scikit-image", "Pillow", "imageh
 # Modules to import-probe (pip name -> import name differs for several of these).
 PROBE_IMPORTS = ["numpy", "cv2", "skimage", "PIL", "imagehash"]
 
+# OCR backend for the TEXT-comparison layer (additive). Best-effort: the core color/font/layout
+# engine works without it; only "does the text match the design" needs OCR. rapidocr-onnxruntime is
+# pip-only & self-contained (no torch) so text comparison works out of the box; pytesseract is the
+# thin wrapper used when a system `tesseract` binary (better Vietnamese, lang `vie`) is present.
+OCR_PACKAGES = ["rapidocr-onnxruntime", "pytesseract"]
+
 DEFAULT_THRESHOLDS = {
     # ── GLOBAL color/structure ────────────────────────────────────────────────
     # Delta-E CIEDE2000 — perceptual color distance (0=identical). <1 imperceptible, 2-3 noticeable
@@ -130,6 +136,21 @@ def _probe_packages(py: Path) -> tuple[bool, dict]:
     return all_ok, data
 
 
+def _probe_ocr(py: Path) -> str:
+    """Resolve the OCR backend available to the venv (tesseract binary / rapidocr / none)."""
+    scripts = str(Path(__file__).resolve().parent)
+    code = ("import sys; sys.path.insert(0, %r)\n"
+            "try:\n"
+            "    import ui_ocr; print(ui_ocr.available_backend() or 'none')\n"
+            "except Exception:\n"
+            "    print('none')\n") % scripts
+    try:
+        proc = subprocess.run([str(py), "-c", code], capture_output=True, text=True, timeout=60)
+        return (proc.stdout or "none").strip().splitlines()[-1] if proc.stdout else "none"
+    except Exception:  # noqa: BLE001
+        return "none"
+
+
 def detect_state() -> dict:
     """Resolve the engine state without changing anything. The single source of truth for the
     ui-engine-check skill. State ∈ {READY, NEEDS-SETUP, NEEDS-DEPS, NOT-INSTALLED}."""
@@ -151,6 +172,7 @@ def detect_state() -> dict:
         return res
     ok, pkgs = _probe_packages(py)
     res["packages"] = pkgs
+    res["ocr_backend"] = _probe_ocr(py)  # tesseract | rapidocr | none (text-comparison layer)
     if not ok:
         res["state"] = "NEEDS-DEPS"
         res["hint"] = "venv exists but the CV stack is incomplete — run /qa:ui-engine-install to repair."
@@ -165,7 +187,7 @@ def detect_state() -> dict:
     return res
 
 
-def _write_config(py: Path, versions: dict) -> Path:
+def _write_config(py: Path, versions: dict, ocr_backend: str = "") -> Path:
     """Persist the engine config (interpreter + versions + thresholds). Preserves any thresholds
     the user already tuned in an existing config; only fills defaults for missing keys."""
     existing = load_config()
@@ -174,6 +196,8 @@ def _write_config(py: Path, versions: dict) -> Path:
         "engine": "ui-vision-cv",
         "venv_python": str(py),
         "packages": versions,
+        "ocr_backend": ocr_backend,
+        "ocr_langs": existing.get("ocr_langs", "vie+eng"),
         "thresholds": thresholds,
         "compare_script": str((Path(__file__).resolve().parent / "ui_compare.py")),
     }
@@ -241,10 +265,24 @@ def cmd_install(force: bool, as_json: bool) -> int:
         return emit("INSTALL-FAILED", 3, missing=missing)
     steps.append("[install] import probe OK: " + ", ".join(f"{k}={v}" for k, v in versions.items()))
 
-    # 4) Write the config.
-    cfgp = _write_config(py, versions)
+    # 4) OCR backend for the TEXT layer — BEST-EFFORT (never fails the engine; text comparison is
+    #    additive). Installs the pip-only rapidocr (self-contained) + pytesseract wrapper.
+    steps.append("[install] pip install " + " ".join(OCR_PACKAGES) + " (OCR for text comparison — best-effort)")
+    ocr_proc = subprocess.run([str(py), "-m", "pip", "install", "--quiet", *OCR_PACKAGES],
+                              capture_output=True, text=True)
+    ocr_backend = _probe_ocr(py)
+    if ocr_proc.returncode != 0 and ocr_backend == "none":
+        steps.append("[install] OCR install skipped/failed — text comparison stays OFF until an OCR "
+                     "backend exists (install `tesseract` + lang `vie`, or retry rapidocr). Core engine OK.")
+    else:
+        tess = "tesseract binary present (best Vietnamese)" if ocr_backend == "tesseract" \
+               else ("rapidocr ready (pip fallback)" if ocr_backend == "rapidocr" else "OCR not detected yet")
+        steps.append(f"[install] OCR backend: {ocr_backend} — {tess}")
+
+    # 5) Write the config.
+    cfgp = _write_config(py, versions, ocr_backend)
     steps.append(f"[install] wrote config {cfgp}")
-    return emit("READY", 0, packages=versions)
+    return emit("READY", 0, packages=versions, ocr_backend=ocr_backend)
 
 
 def cmd_check(as_json: bool) -> int:
@@ -257,6 +295,9 @@ def cmd_check(as_json: bool) -> int:
         print(f"  config      : {res['config_path']}  ({'present' if res['config_exists'] else 'MISSING'})")
         for m, v in res["packages"].items():
             print(f"  {m:<10}: {v if v else 'MISSING'}")
+        ocr = res.get("ocr_backend", "none")
+        print(f"  ocr        : {ocr}" + ("  (text comparison ON)" if ocr and ocr != "none"
+                                         else "  (text comparison OFF — install tesseract+vie or rapidocr)"))
         print(f"  → {res['hint']}")
     return 0 if res["state"] == "READY" else 2
 

@@ -9,12 +9,16 @@ the raw pixels, so a whole exploratory-ui run costs almost no vision tokens. Eve
 appended to a JSONL "model log" so the team can track how reliably the engine flags real deviations.
 
 Why this design: a global Delta-E says "a color is off somewhere"; it can't tell *background* from
-*text*, nor a heavier font from a bigger one. So the engine works at two levels:
+*text*, nor a heavier font from a bigger one, nor whether the WORDS changed. So the engine works at
+three levels:
   • GLOBAL   — Delta-E (mean/p95), SSIM, histogram, pHash, palette  → fast overall signal.
   • PER-CELL — split the aligned frames into a grid; in each cell separate background vs foreground
                (text) color via 2-means, and on the text mask measure stroke width (weight), text
-               row height (size) and an edge-orientation signature (family). Differences beyond a
-               perceptual tolerance become typed FINDINGS the AI can turn into precise bug lines.
+               row height (size) and an edge-orientation signature (family). → color.* / typography.* / layout.shift.
+  • TEXT     — (optional, --design-text) OCR the app screenshot and match each Figma TEXT node (exact
+               content/color/font from text-styles.json) to the app text by position. A changed STATIC
+               label (design "Products" → app "Product") becomes text.mismatch; values that look DYNAMIC
+               (digits/currency/dates, or low similarity) are flagged likely_dynamic for the AI to skip.
 Tolerances are calibrated to human perception (CIEDE2000 for color; stroke/height *ratios* for type)
 and stay device-tolerant — small rendering noise passes, but a difference the eye would catch fails.
 
@@ -349,17 +353,122 @@ def _scan_regions(ref, act, th):
                                          "detail": f"dáng chữ/độ cong nét khác (có thể khác font family, "
                                                    f"vd serif vs sans) — shape-distance {dist:.2f}, mắt người xác nhận"})
 
-    # rank: fail before warn, larger magnitude first; cap for token thrift
+    return findings
+
+
+def _finalize(findings: list):
+    """Sort (fail first, bigger magnitude first), cap for token thrift, and roll up summary_by_type."""
     order = {"fail": 0, "warn": 1}
     findings.sort(key=lambda f: (order.get(f["severity"], 2),
                                  -float(f.get("deltaE", f.get("ratio", f.get("shape_distance", 0)) or 0))))
+    capped = findings[:MAX_FINDINGS]
     summary = {}
-    for f in findings:
+    for f in capped:
         s = summary.setdefault(f["type"], {"fail": 0, "warn": 0, "regions": []})
         s[f["severity"]] = s.get(f["severity"], 0) + 1
         if len(s["regions"]) < 6:
-            s["regions"].append(f["region"])
-    return findings[:MAX_FINDINGS], summary
+            s["regions"].append(f.get("region", ""))
+    return capped, summary
+
+
+# ── text layer (design tokens vs app OCR) ──────────────────────────────────────
+
+def _norm(s: str) -> str:
+    return " ".join((s or "").split()).strip()
+
+
+def _looks_dynamic(s: str) -> bool:
+    """Heuristic: text that varies with DATA (numbers, currency, dates, %, codes) → likely a value,
+    not a static label. The AI makes the final static-vs-dynamic call (rules/ui-text-rules.md)."""
+    import re
+    s = s or ""
+    if re.search(r"\d", s):                     # any digit → number/price/date/count/id
+        return True
+    if re.search(r"[₫$€%]|(?:đ|VND|USD)\b", s):  # currency/percent markers
+        return True
+    return False
+
+
+def _text_layer(app_path: Path, design_texts: list, frame_size, app_size, th, ocr_langs: str):
+    """Compare the DESIGN's exact text nodes (Figma tokens) against the app's OCR'd text, matched by
+    position. Emits text.mismatch / text.missing + layout.align findings, each carrying the design
+    tokens (text/color/font/size) so the report can read plainly. Returns (findings, meta)."""
+    import difflib
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    try:
+        import ui_ocr
+    except Exception as e:  # noqa: BLE001
+        return [], {"text_ocr": "none", "error": f"ui_ocr import failed: {e}"}
+
+    if not design_texts or not frame_size or not all(frame_size):
+        return [], {"text_ocr": "skipped", "reason": "no design text tokens / frame size"}
+
+    ocr = ui_ocr.extract(app_path, ocr_langs)
+    backend = ocr.get("backend", "none")
+    if backend == "none" or ocr.get("error"):
+        return [], {"text_ocr": backend, "error": ocr.get("error", "no OCR backend"),
+                    "hint": "install Tesseract (vie) or rapidocr-onnxruntime via /qa:ui-engine-install"}
+    app_lines = [l for l in ocr.get("lines", []) if _norm(l["text"])]
+
+    Wf, Hf = float(frame_size[0]), float(frame_size[1])
+    aw, ah = float(app_size[0]), float(app_size[1])
+    sx, sy = aw / Wf, ah / Hf
+    findings = []
+
+    def human(cx, cy):
+        vb = ["trên", "giữa", "dưới"][min(2, int(cy / ah * 3))]
+        hb = ["trái", "giữa", "phải"][min(2, int(cx / aw * 3))]
+        return f"{vb}-{hb}"
+
+    used = set()
+    for dt in design_texts:
+        txt = _norm(dt.get("text", ""))
+        bb = dt.get("bbox")
+        if len(txt) < 1 or not bb:
+            continue
+        # design bbox → app pixel space
+        dx, dy, dw, dh = bb[0] * sx, bb[1] * sy, bb[2] * sx, bb[3] * sy
+        dcx, dcy = dx + dw / 2, dy + dh / 2
+        # nearest app OCR line by center, within a vertical tolerance of ~1.5 line-heights
+        best, best_d = None, 1e9
+        for i, l in enumerate(app_lines):
+            lx, ly, lw, lh = l["bbox"]
+            lcx, lcy = lx + lw / 2, ly + lh / 2
+            d = ((lcx - dcx) ** 2 + (lcy - dcy) ** 2) ** 0.5
+            if abs(lcy - dcy) <= max(dh, lh) * 1.8 and d < best_d:
+                best, best_d, best_i = l, d, i
+        tokens = {"design_text": dt.get("text", ""), "design_color": dt.get("color", ""),
+                  "design_font": dt.get("fontFamily", ""), "design_weight": dt.get("fontWeight", ""),
+                  "design_size": dt.get("fontSize")}
+        if best is None:
+            findings.append({**tokens, "type": "text.missing", "severity": "warn",
+                             "region": "", "where": human(dcx, dcy), "app_text": "",
+                             "likely_dynamic": _looks_dynamic(txt),
+                             "detail": f"design có text «{dt.get('text','')}» ở vùng {human(dcx, dcy)} "
+                                       f"nhưng app không thấy text ở đó (thiếu / state khác / dynamic?)"})
+            continue
+        used.add(best_i)
+        app_txt = _norm(best["text"])
+        if _norm(txt).casefold() == app_txt.casefold():
+            continue  # text matches → no finding (color/font handled by the grid layer)
+        sim = difflib.SequenceMatcher(None, txt.casefold(), app_txt.casefold()).ratio()
+        dyn = _looks_dynamic(txt) or _looks_dynamic(app_txt) or sim < 0.55
+        sev = "warn" if dyn else "fail"
+        findings.append({**tokens, "type": "text.mismatch", "severity": sev,
+                         "region": "", "where": human(dcx, dcy),
+                         "app_text": best["text"], "similarity": round(sim, 2),
+                         "likely_dynamic": dyn,
+                         "detail": (f"text khác: design «{dt.get('text','')}» → app «{best['text']}»"
+                                    + (" (giống value động — cần xác nhận)" if dyn else " (nhãn tĩnh — nghi sai)"))})
+        # alignment: matched text whose left edge moved a lot horizontally
+        align = abs((bb[0] * sx) - best["bbox"][0]) / aw
+        if align >= 0.06 and not dyn:
+            findings.append({"type": "layout.align", "severity": "warn", "region": "",
+                             "where": human(dcx, dcy), "shift_pct": round(align * 100, 0),
+                             "detail": f"canh lề khác ~{align*100:.0f}% chiều ngang ở vùng {human(dcx, dcy)} "
+                                       f"(«{dt.get('text','')}»)"})
+    meta = {"text_ocr": backend, "design_texts": len(design_texts), "app_lines": len(app_lines)}
+    return findings, meta
 
 
 # ── verdict ────────────────────────────────────────────────────────────────────
@@ -388,16 +497,17 @@ def _verdict(metrics, summary, th):
     label = {"color.background": "màu nền", "color.text": "màu chữ",
              "typography.weight": "độ đậm chữ", "typography.size": "cỡ chữ",
              "typography.family": "font chữ", "layout.shift": "bố cục",
-             "content.flat": "nội dung/state"}
+             "layout.align": "canh lề", "content.flat": "nội dung/state",
+             "text.mismatch": "nội dung text", "text.missing": "text thiếu"}
     for t, s in summary.items():
         if s.get("fail"):
-            fail = True; reasons.append(f"{label.get(t, t)} sai ở {s['fail']} vùng ({', '.join(s['regions'][:3])})")
+            fail = True; reasons.append(f"{label.get(t, t)} sai ở {s['fail']} vùng ({', '.join([r for r in s['regions'][:3] if r])})")
         elif s.get("warn"):
-            warn = True; reasons.append(f"{label.get(t, t)} cận ngưỡng ở {s['warn']} vùng")
+            warn = True; reasons.append(f"{label.get(t, t)} cận ngưỡng/cần xác nhận ở {s['warn']} vùng")
 
     verdict = "FAIL" if fail else ("WARN" if warn else "PASS")
     if not reasons:
-        reasons.append("khớp design trong dung sai (màu/bố cục/font)")
+        reasons.append("khớp design trong dung sai (text/màu/font/bố cục)")
     return verdict, reasons
 
 
@@ -437,8 +547,7 @@ def compare(ref_path: Path, act_path: Path, work: int, th: dict, diff: Path | No
         "color_match_pct": round(max(0.0, 100.0 - de_mean / 0.1), 1),
     }
 
-    findings, summary = _scan_regions(ref_r, act_r, th)
-    verdict, reasons = _verdict(metrics, summary, th)
+    region_findings = _scan_regions(ref_r, act_r, th)
 
     if diff is not None:
         try:
@@ -447,8 +556,8 @@ def compare(ref_path: Path, act_path: Path, work: int, th: dict, diff: Path | No
             diff = None
 
     return {
-        "verdict": verdict, "reasons": reasons, "metrics": metrics,
-        "findings": findings, "summary_by_type": summary,
+        "metrics": metrics,
+        "region_findings": region_findings,   # raw; main() may add text findings then finalize
         "sizes": {"reference": [rw, rh], "actual": [aw, ah],
                   "work": list(ref_r.shape[1::-1]), "grid": [int(th["grid_rows"]), int(th["grid_cols"])]},
         "heatmap": str(diff) if diff else None,
@@ -490,6 +599,9 @@ def main(argv=None) -> int:
     ap.add_argument("--thresholds", default="")
     ap.add_argument("--work", type=int, default=768, help="working longer-side px (default 768)")
     ap.add_argument("--grid", default="", help="region grid RxC (e.g. 6x4) — overrides config")
+    ap.add_argument("--design-text", default="", help="figma text-styles.json (design text oracle) — enables text comparison")
+    ap.add_argument("--design-slug", default="", help="which frame slug inside text-styles.json to use")
+    ap.add_argument("--ocr-langs", default="vie+eng", help="OCR languages for the app text (default vie+eng)")
     args = ap.parse_args(argv)
 
     ref_path, act_path = Path(args.reference), Path(args.actual)
@@ -509,8 +621,30 @@ def main(argv=None) -> int:
                           "error": f"{type(e).__name__}: {e}"}, ensure_ascii=False))
         return 2
 
+    # ── optional text layer (design text oracle vs app OCR) ──
+    findings = list(result.pop("region_findings", []))
+    text_meta = {"text_ocr": "skipped"}
+    if args.design_text:
+        try:
+            ts = json.loads(Path(args.design_text).read_text(encoding="utf-8"))
+            entry = ts.get(args.design_slug) if args.design_slug else (ts if "texts" in ts else None)
+            if entry is None and len(ts) == 1:
+                entry = next(iter(ts.values()))  # single-frame file → just use it
+            design_texts = (entry or {}).get("texts", [])
+            frame_size = (entry or {}).get("frame_size")
+            tf, text_meta = _text_layer(act_path, design_texts, frame_size, result["sizes"]["actual"], th, args.ocr_langs)
+            findings.extend(tf)
+        except Exception as e:  # noqa: BLE001 — text layer is additive, never abort the pixel verdict
+            text_meta = {"text_ocr": "error", "error": f"{type(e).__name__}: {e}"}
+
+    findings, summary = _finalize(findings)
+    verdict, reasons = _verdict(result["metrics"], summary, th)
+
     out = {"ok": True, "pair_id": args.pair_id, "screen": args.screen, "feature": args.feature,
-           "reference": str(ref_path), "actual": str(act_path), **result}
+           "reference": str(ref_path), "actual": str(act_path),
+           "verdict": verdict, "reasons": reasons, "metrics": result["metrics"],
+           "findings": findings, "summary_by_type": summary, "text_meta": text_meta,
+           "sizes": result["sizes"], "heatmap": result["heatmap"]}
 
     if args.out:
         op = Path(args.out); op.parent.mkdir(parents=True, exist_ok=True)
@@ -521,12 +655,13 @@ def main(argv=None) -> int:
         entry = {"ts": datetime.now(timezone.utc).isoformat(timespec="seconds"),
                  "feature": args.feature, "pair_id": args.pair_id, "screen": args.screen,
                  "verdict": out["verdict"], "metrics": out["metrics"],
-                 "summary_by_type": out["summary_by_type"], "thresholds": th, "sizes": out["sizes"]}
+                 "summary_by_type": out["summary_by_type"],
+                 "text_ocr": out["text_meta"].get("text_ocr"), "thresholds": th, "sizes": out["sizes"]}
         with lp.open("a", encoding="utf-8") as f:
             f.write(json.dumps(entry, ensure_ascii=False) + "\n")
 
     print(json.dumps({k: out[k] for k in ("ok", "pair_id", "screen", "verdict", "reasons",
-                                          "metrics", "findings", "summary_by_type", "heatmap")},
+                                          "metrics", "findings", "summary_by_type", "text_meta", "heatmap")},
                      ensure_ascii=False))
     return 0
 

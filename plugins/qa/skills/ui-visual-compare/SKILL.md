@@ -32,7 +32,10 @@ reads the result.** Metric meanings + thresholds: [ui-visual-compare.md](../../r
      --out  results/<feature>/ui-compare/pairs/<id>.json \
      --log  results/<feature>/ui-compare/model-log.jsonl \
      --diff results/<feature>/ui-compare/diffs/<id>-heatmap.png \
-     --thresholds <config_path>
+     --thresholds <config_path> \
+     # text layer (when ocr_backend ≠ none) — see skill ui-text-compare:
+     --design-text results/<feature>/ui-compare/figma/text-styles.json \
+     --design-slug fm_<id>-<slug> --ocr-langs vie+eng
    ```
    It prints (and writes to `--out`) a small JSON with three layers:
    - `verdict` + `reasons[]` — the headline call, already phrased.
