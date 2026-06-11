@@ -41,26 +41,33 @@ image **only** for the screens the engine flagged. Metric/threshold reference:
    heatmap. Process pairs sequentially (or batch the shell calls); **do not Read the screenshots** —
    collect the small verdict JSONs.
 
-3. **Read the verdicts** (`pairs/*.json`) and bucket each screen: PASS / WARN / FAIL.
+3. **Read the verdicts** (`pairs/*.json`) — for each screen lead with `summary_by_type` (which of
+   `color.background` / `color.text` / `typography.weight` / `typography.size` / `typography.family`
+   / `layout.shift` failed, in how many regions) then `findings[]` for the quotable specifics. Bucket
+   each screen PASS / WARN / FAIL.
    - For **FAIL** screens only: Read the **heatmap** (`diffs/<id>-heatmap.png`, downscale first if
-     >2000px via `scripts/downscale_image.py`) to confirm and localize the deviation, and — when a
-     design token baseline exists — cross-check the expected color against the design system per
-     [design-conformance](../design-conformance/SKILL.md) (so the report cites *expected #2196F3*,
-     not just a Delta-E number).
-   - For **WARN**: judge from the numbers; Read images only if the call is genuinely ambiguous.
+     >2000px via `scripts/downscale_image.py`) to confirm + localize, and — when a design token
+     baseline exists — cross-check the expected color/type against the design system per
+     [design-conformance](../design-conformance/SKILL.md) (so the report cites *expected #2196F3 /
+     Bold 16sp*, not just a number). For a `typography.family` finding (LOW confidence) ALWAYS
+     eyeball the image before asserting it — it's a shape hint, not OCR.
+   - For **WARN**: judge from the numbers; Read images only if genuinely ambiguous.
 
 4. **Triage each FAIL/WARN** → `[APP-BUG] design deviation` vs `[DATA]`/state difference vs
    `[NEEDS-TRIAGE]` (no design baseline / mis-pair / wrong device size). A real deviation cites:
-   screen · what differs (color/layout) · the metric (mean/p95 Delta-E, SSIM) · expected (token/Figma)
-   vs actual · heatmap path as evidence.
+   screen · **which attribute** (nền/chữ-màu/đậm-nhạt/cỡ/font/bố cục) + region · the number (ΔE, stroke
+   %, size %, SSIM) · expected (token/Figma) vs actual · heatmap path as evidence. Quote the finding's
+   `detail` string directly — it's already phrased.
 
 5. **Write the UI-conformance report** `results/<feature>/ui-conformance-report-<ddMMMyyyy>.md` in
    the configured output language (default Vietnamese with diacritics — see
    [output-language.md](../../rules/output-language.md)). Structure:
    - **Tổng quan**: feature, platform, device/viewport, engine versions, # screens, PASS/WARN/FAIL counts.
-   - **Bảng đối chiếu** (one row per screen): `Màn | fm/ss id | Verdict | ΔE mean | ΔE p95 | SSIM | hist | Ghi chú`.
-   - **🐛 Design deviations** (`[APP-BUG]`): per screen — mô tả lệch, metric, expected vs actual,
-     ảnh heatmap `diffs/<id>-heatmap.png`. (Use the bug-report template fields where useful:
+   - **Bảng đối chiếu** (one row per screen): `Màn | fm/ss id | Verdict | ΔE mean | SSIM | Thuộc tính sai (nền/chữ/đậm/cỡ/font/bố cục) | Ghi chú`.
+   - **🐛 Design deviations** (`[APP-BUG]`): **grouped by attribute** so dev/designer sees the pattern —
+     e.g. *Màu nền*, *Màu chữ*, *Độ đậm (weight)*, *Cỡ chữ (size)*, *Font family*, *Bố cục*. Per finding:
+     màn + vùng (`giữa-trái`), expected vs actual (hex / %), ảnh heatmap `diffs/<id>-heatmap.png`.
+     (Use the bug-report template fields where useful:
      [exploratory-bug-report-template.md](../../rules/exploratory-bug-report-template.md).)
    - **✅ Đạt (PASS)** + **⚠️ Cận ngưỡng (WARN)** lists.
    - **❓ NEEDS-TRIAGE**: unpaired screens, missing design baseline, seeding skipped.

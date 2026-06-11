@@ -8,10 +8,13 @@ allowed-tools: Read, Glob, Grep, Edit, Write, Bash, Agent, WebFetch, ToolSearch
 
 Feature + design to verify: **$ARGUMENTS**
 
-**Goal — does the app screen match its design?** Color first (the headline question: *"màu có giống
-design không"*), then layout/structure. Every comparison runs on a **local CV engine**
-(opencv + scikit-image) so the model does the heavy lifting and the AI only reads compact verdicts →
-near-zero vision tokens. Deviations become `[APP-BUG] design deviation` in a dev-facing report.
+**Goal — does the app screen match its design, and HOW does it differ?** The local CV engine
+(opencv + scikit-image) analyzes per region and returns **typed findings**, not just "different":
+**bố cục** (layout/alignment) · **màu sắc** tách riêng *nền* vs *chữ* (hex + ΔE) · **font** —
+*family* (serif/sans), *độ đậm* (weight/stroke), *cỡ chữ* (size). The model does the heavy lifting;
+the AI reads compact typed verdicts → near-zero vision tokens. Tolerances are perceptual + device-
+tolerant (near-identical fonts pass; a difference the eye would catch fails). Deviations become
+`[APP-BUG] design deviation` in a dev-facing report, grouped by attribute.
 
 > ⚠️ **Local-first, token-thrifty**: the engine reduces each screen pair to a small JSON
 > (`deltaE_mean/p95`, `ssim`, `hist_corr`, `phash`, verdict). Read **raw screenshots only for FAIL**

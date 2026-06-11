@@ -49,6 +49,7 @@ PACKAGES = ["numpy", "opencv-python-headless", "scikit-image", "Pillow", "imageh
 PROBE_IMPORTS = ["numpy", "cv2", "skimage", "PIL", "imagehash"]
 
 DEFAULT_THRESHOLDS = {
+    # ── GLOBAL color/structure ────────────────────────────────────────────────
     # Delta-E CIEDE2000 — perceptual color distance (0=identical). <1 imperceptible, 2-3 noticeable
     # on a close look, >5 clearly a different color. Mean over the frame + the 95th percentile region.
     "deltaE_mean_warn": 3.0,
@@ -62,6 +63,17 @@ DEFAULT_THRESHOLDS = {
     # Color-histogram correlation (1=identical distribution). Catches global tint/theme drift.
     "hist_corr_warn": 0.92,
     "hist_corr_fail": 0.85,
+    # ── PER-REGION color (background vs text separated, via 2-means per grid cell) ──
+    "bg_deltaE_warn": 3.0, "bg_deltaE_fail": 6.0,       # background/fill color
+    "text_deltaE_warn": 4.0, "text_deltaE_fail": 8.0,   # text/foreground color
+    # ── PER-REGION typography (measured on the text mask) ─────────────────────
+    "stroke_ratio_warn": 0.15, "stroke_ratio_fail": 0.25,  # font weight (đậm/nhạt): |Δstroke|/ref
+    "size_ratio_warn": 0.10, "size_ratio_fail": 0.18,      # font size: |Δtext-height|/ref
+    "shape_dist_warn": 0.07, "shape_dist_fail": 0.11,      # font family (LOW confidence): edge-orientation distance
+    # ── PER-REGION layout ─────────────────────────────────────────────────────
+    "cell_ssim_warn": 0.82, "cell_ssim_fail": 0.62,        # local structure/alignment drift
+    # ── region grid (rows × cols the frame is split into for the per-region sweep) ──
+    "grid_rows": 6, "grid_cols": 4,
 }
 
 
