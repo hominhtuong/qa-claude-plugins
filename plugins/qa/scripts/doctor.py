@@ -89,6 +89,7 @@ def run(fix: bool = False) -> int:
             print("[fix] wrangler install failed — install manually: npm install -g wrangler")
 
     _check_image_backend(fix=fix)
+    _check_ui_engine()
     _check_tls(fix=fix)
 
     if missing_required:
@@ -171,6 +172,29 @@ def _check_image_backend(fix: bool = False) -> None:
     print("· [warn] image     no downscale backend (Pillow/sips/ImageMagick/ffmpeg). "
           "Screenshot-heavy runs (e.g. /qa:exploratory) may hit the many-image cap. "
           "Fix: `pip install Pillow` (or run /qa:doctor --fix).")
+
+
+def _check_ui_engine() -> None:
+    """Optional: the local CV engine for /qa:exploratory-ui (opencv + scikit-image venv).
+
+    Report-only — never auto-installs here (it's a ~100-200MB download, so it's opt-in via the
+    /qa:ui-engine-install command). Just surfaces whether the engine is READY for the
+    screenshot-vs-Figma comparison, so the user knows what to run before /qa:exploratory-ui.
+    """
+    try:
+        sys.path.insert(0, str(__import__("pathlib").Path(__file__).resolve().parent))
+        from ui_engine import detect_state
+        state = detect_state()
+    except Exception:  # noqa: BLE001
+        return  # never break the doctor over an optional feature
+    s = state.get("state")
+    if s == "READY":
+        pkgs = state.get("packages", {})
+        ver = pkgs.get("cv2") or "?"
+        print(f"· [ok]   ui-engine OpenCV {ver} (local screenshot-vs-Figma engine for /qa:exploratory-ui)")
+    else:
+        print("· [warn] ui-engine not installed (only needed for /qa:exploratory-ui). "
+              "Install on demand with /qa:ui-engine-install.")
 
 
 def _check_tls(fix: bool = False) -> None:

@@ -33,7 +33,8 @@ PLUGIN_ROOT = Path(__file__).resolve().parent.parent      # scripts/ -> plugin r
 ENV_TEMPLATE = PLUGIN_ROOT / "templates" / ".plugin.env.example"
 MANAGED_SRC = PLUGIN_ROOT / "templates" / "qa-claude"     # testcase-template.md, log-bug.config.yml
 MANAGED_DIR = ".claude/qa-claude"
-GITIGNORE_LINES = [".claude/qa-claude/.plugin.env", ".qa-venv/", "results/tests/"]
+GITIGNORE_LINES = [".claude/qa-claude/.plugin.env", ".qa-venv/", "results/tests/",
+                   ".claude/qa-claude/ui-engine/", ".claude/qa-claude/ui-engine.config.json"]
 
 
 def _copy(src: Path, dst: Path, overwrite: bool):
