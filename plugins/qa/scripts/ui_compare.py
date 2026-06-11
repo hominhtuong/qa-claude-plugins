@@ -15,10 +15,11 @@ three levels:
   • PER-CELL — split the aligned frames into a grid; in each cell separate background vs foreground
                (text) color via 2-means, and on the text mask measure stroke width (weight), text
                row height (size) and an edge-orientation signature (family). → color.* / typography.* / layout.shift.
-  • TEXT     — (optional, --design-text) OCR the app screenshot and match each Figma TEXT node (exact
-               content/color/font from text-styles.json) to the app text by position. A changed STATIC
-               label (design "Products" → app "Product") becomes text.mismatch; values that look DYNAMIC
-               (digits/currency/dates, or low similarity) are flagged likely_dynamic for the AI to skip.
+  • TEXT     — (optional) OCR the app screenshot and match the design's text by position. The design
+               text comes from EITHER --design-text (exact Figma tokens text-styles.json, needs a token)
+               OR --design-image (token-free: OCR the design render). A changed STATIC label (design
+               "Products" → app "Product") becomes text.mismatch; values that look DYNAMIC (digits/
+               currency/dates, or low similarity) are flagged likely_dynamic for the AI to skip.
 Tolerances are calibrated to human perception (CIEDE2000 for color; stroke/height *ratios* for type)
 and stay device-tolerant — small rendering noise passes, but a difference the eye would catch fails.
 
@@ -471,6 +472,25 @@ def _text_layer(app_path: Path, design_texts: list, frame_size, app_size, th, oc
     return findings, meta
 
 
+def _design_texts_from_ocr(design_path: Path, ocr_langs: str):
+    """Token-free design text oracle: OCR the rendered design frame (fm_*.png) into the same shape
+    as the Figma text-styles (text + bbox; color/font left empty — those come from the pixel layer).
+    Returns (design_texts, frame_size). Used when no FIGMA_TOKEN/text-styles.json is available."""
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import ui_ocr
+    img = cv2.imread(str(design_path))
+    if img is None:
+        return [], None
+    h, w = img.shape[:2]
+    ocr = ui_ocr.extract(design_path, ocr_langs)
+    if ocr.get("backend") == "none" or ocr.get("error"):
+        return [], [w, h]
+    texts = [{"text": l["text"], "color": "", "fontFamily": "", "fontWeight": "", "fontSize": None,
+              "bbox": [l["bbox"][0], l["bbox"][1], l["bbox"][2], l["bbox"][3]]}
+             for l in ocr.get("lines", []) if _norm(l["text"])]
+    return texts, [w, h]
+
+
 # ── verdict ────────────────────────────────────────────────────────────────────
 
 def _verdict(metrics, summary, th):
@@ -599,8 +619,9 @@ def main(argv=None) -> int:
     ap.add_argument("--thresholds", default="")
     ap.add_argument("--work", type=int, default=768, help="working longer-side px (default 768)")
     ap.add_argument("--grid", default="", help="region grid RxC (e.g. 6x4) — overrides config")
-    ap.add_argument("--design-text", default="", help="figma text-styles.json (design text oracle) — enables text comparison")
+    ap.add_argument("--design-text", default="", help="figma text-styles.json (EXACT design text oracle, needs token) — enables text comparison")
     ap.add_argument("--design-slug", default="", help="which frame slug inside text-styles.json to use")
+    ap.add_argument("--design-image", default="", help="token-free text oracle: OCR this design render (e.g. the --reference fm png) for the design text")
     ap.add_argument("--ocr-langs", default="vie+eng", help="OCR languages for the app text (default vie+eng)")
     args = ap.parse_args(argv)
 
@@ -622,8 +643,11 @@ def main(argv=None) -> int:
         return 2
 
     # ── optional text layer (design text oracle vs app OCR) ──
+    # Two design-text sources: EXACT Figma tokens (--design-text, needs a token) OR token-free OCR of
+    # the design render (--design-image, e.g. the --reference fm png). The exact path wins when both given.
     findings = list(result.pop("region_findings", []))
     text_meta = {"text_ocr": "skipped"}
+    design_texts, frame_size, src = None, None, ""
     if args.design_text:
         try:
             ts = json.loads(Path(args.design_text).read_text(encoding="utf-8"))
@@ -632,7 +656,19 @@ def main(argv=None) -> int:
                 entry = next(iter(ts.values()))  # single-frame file → just use it
             design_texts = (entry or {}).get("texts", [])
             frame_size = (entry or {}).get("frame_size")
+            src = "figma-tokens"
+        except Exception as e:  # noqa: BLE001
+            text_meta = {"text_ocr": "error", "error": f"design-text load: {type(e).__name__}: {e}"}
+    if not design_texts and args.design_image:
+        try:
+            design_texts, frame_size = _design_texts_from_ocr(Path(args.design_image), args.ocr_langs)
+            src = "ocr-design-render"
+        except Exception as e:  # noqa: BLE001
+            text_meta = {"text_ocr": "error", "error": f"design-image OCR: {type(e).__name__}: {e}"}
+    if design_texts:
+        try:
             tf, text_meta = _text_layer(act_path, design_texts, frame_size, result["sizes"]["actual"], th, args.ocr_langs)
+            text_meta["design_text_source"] = src
             findings.extend(tf)
         except Exception as e:  # noqa: BLE001 — text layer is additive, never abort the pixel verdict
             text_meta = {"text_ocr": "error", "error": f"{type(e).__name__}: {e}"}

@@ -33,9 +33,10 @@ reads the result.** Metric meanings + thresholds: [ui-visual-compare.md](../../r
      --log  results/<feature>/ui-compare/model-log.jsonl \
      --diff results/<feature>/ui-compare/diffs/<id>-heatmap.png \
      --thresholds <config_path> \
-     # text layer (when ocr_backend ≠ none) — see skill ui-text-compare:
-     --design-text results/<feature>/ui-compare/figma/text-styles.json \
-     --design-slug fm_<id>-<slug> --ocr-langs vie+eng
+     # text layer (when ocr_backend ≠ none) — see skill ui-text-compare. Pick ONE design-text source:
+     #   exact (token):   --design-text results/<feature>/ui-compare/figma/text-styles.json --design-slug fm_<id>-<slug>
+     #   token-free (MCP): --design-image results/<feature>/ui-compare/figma/fm_<id>-<slug>.png
+     --ocr-langs vie+eng
    ```
    It prints (and writes to `--out`) a small JSON with three layers:
    - `verdict` + `reasons[]` — the headline call, already phrased.

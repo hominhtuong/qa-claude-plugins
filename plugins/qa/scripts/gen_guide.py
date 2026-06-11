@@ -22,7 +22,7 @@ GUIDE_NAME = "README.md"                                   # lives in .claude/qa
 # is ever silently dropped.
 GROUPS = [
     ("🚀 Bắt đầu & trợ giúp", [
-        "scaffold", "setup", "ui-engine-install", "help", "ask", "status", "feedback",
+        "scaffold", "setup", "ui-engine-install", "auth-figma", "help", "ask", "status", "feedback",
     ]),
     ("🤖 Kiểm thử tự động — Automation (Playwright Web / Appium iOS·Android)", [
         "exploratory", "exploratory-ui", "plan-tests", "find-elements", "cook", "run", "fix",
