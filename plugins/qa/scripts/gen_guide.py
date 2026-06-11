@@ -22,10 +22,10 @@ GUIDE_NAME = "README.md"                                   # lives in .claude/qa
 # is ever silently dropped.
 GROUPS = [
     ("🚀 Bắt đầu & trợ giúp", [
-        "scaffold", "setup", "help", "ask", "status", "feedback",
+        "scaffold", "setup", "ui-engine-install", "help", "ask", "status", "feedback",
     ]),
     ("🤖 Kiểm thử tự động — Automation (Playwright Web / Appium iOS·Android)", [
-        "exploratory", "plan-tests", "find-elements", "cook", "run", "fix",
+        "exploratory", "exploratory-ui", "plan-tests", "find-elements", "cook", "run", "fix",
         "analyze", "count-cases", "missing-test-ids", "kill-appium",
     ]),
     ("✍️ Kiểm thử thủ công — Manual QA (test case + bug board)", [
