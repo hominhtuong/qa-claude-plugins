@@ -69,18 +69,22 @@ The report does **not** contain these — gather them a single time and apply to
 ### 6. Create each selected bug — via skill `log-bug`
 Hand each completed draft to the **[log-bug](../log-bug/SKILL.md)** create flow (do NOT reimplement it): it loads board config, runs the **read-only guard** + **daily multi-board confirm** (once for the batch), maps fields/options, **uploads the screenshot** from `Bằng chứng` and attaches the file token (upload fails → create without it, note which), runs the **duplicate check** if `check_duplicate: true`, creates the record, and returns a direct link.
 
-Use the `Input data / Action` body template from the log-bug skill:
+Use the `Input data / Action` body template from skill **[log-bug](../log-bug/SKILL.md)** (step 9) — including its **writing rules**: friendly + ngắn gọn, KHÔNG jargon nội bộ (Figma frame id, tên class màn), bỏ precondition hiển nhiên, và `Preconditions`/`Notes` là **mục có điều kiện** (chỉ render khi có nội dung thật, không có → ẩn cả mục, không in heading rỗng hay "(nếu có)"). Đối chiếu design chỉ ghi "so sánh với Figma/design", chi tiết khác biệt UI để ở **ảnh khoanh vùng/diff** đính kèm. Field **`Expected`** viết theo loại bug (Function → hành vi đúng cụ thể; Design → "UI đúng theo Figma/design"; Improvement → mong muốn rõ ràng) — KHÔNG đưa số đo delta-E / mã màu / frame id vào Expected.
 ```
-Preconditions (nếu có):
-- ...
+Preconditions:                    ← bỏ HẲN mục này nếu trạng thái đầu là hiển nhiên
+- <chỉ trạng thái KHÔNG hiển nhiên>
+
 Steps:
-1. ...
+1. Mở màn <tên màn người dùng thấy>.
+2. Quan sát / <thao tác>.
+3. So sánh với design (Figma).
+
 Actual:
-- ... (kèm trích nguyên văn lỗi/SQL nếu có)
-Notes (nếu có):
-- Root cause: ...
-- Tác động: ...
-- Defect ID (exploratory): APP-NN
+- <hiện tượng, ngắn gọn; kèm trích nguyên văn lỗi/SQL nếu có>
+
+Notes:                            ← bỏ HẲN mục này nếu không có gì cần lưu ý
+- <root cause / tác động / Defect ID (exploratory): APP-NN — chỉ khi hữu ích cho dev>
+
 Account test: <defaults.test_account or from the report, if any>
 ```
 

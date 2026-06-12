@@ -31,26 +31,69 @@ A reusable capability to **create a bug record** on Lark Bitable per the team co
    - User provided → validate; big mismatch vs evidence → ask to confirm. Do not override silently.
    - User omitted → **auto-estimate** from the evidence + write a one-line rationale. Do NOT ask just for priority.
    - Normalize to an option in `options.priority`.
-7. **Attachment** (if any): image/video → read & ANALYZE the content (which screen, steps, actual vs expected) before filling. Short user description → it is the primary intent; media adds detail. Upload via Lark (helper or MCP), get the file token. Upload fails → create without attachment, tell the user to add it manually.
+7. **Attachment** (if any): image/video → read & ANALYZE the content (which screen, steps, actual vs expected) before filling. Short user description → it is the primary intent; media adds detail. **Bằng chứng phải CLEAR — dev nhìn vào thấy NGAY sai ở đâu**: ưu tiên ảnh đã **khoanh vùng / so sánh app↔design** (auto exploratory-ui → đính kèm ảnh diff/heatmap; thủ công → khuyến khích user khoanh vùng). Upload via Lark (helper or MCP), get the file token. Upload fails → create without attachment, tell the user to add it manually.
 8. **Create the record** (with the **USER token** — see step 1, mandatory for the audit trail):
    - Prefer the project's Python Lark helper if present (e.g. `configs/lark_api.py`: `create_record`, `search_records`, `list_fields`). Otherwise use the **Lark MCP** bitable create-record tool with `useUAT: true` (see [lark-mcp-guide.md](../../rules/lark-mcp-guide.md)).
    - Map each value to the board field name from `fields:` and the option text from `options:`; Dev PIC → open_id(s).
-9. **Body template** for the `Input data / Action` field:
+9. **Body template** for the `Input data / Action` field — viết NGẮN, friendly, để dev đọc là nắm bug ngay. `Preconditions` và `Notes` là **mục có điều kiện**: chỉ render khi THỰC SỰ có nội dung; không có → **ẩn cả mục (kể cả heading)** — KHÔNG bao giờ in heading rỗng hay chữ literal "(nếu có)".
    ```
-   Preconditions (nếu có):
-   - ...
+   Preconditions:                         ← optional; bỏ HẲN mục này nếu trạng thái đầu là hiển nhiên
+   - <chỉ trạng thái KHÔNG hiển nhiên, vd "Đơn đang ở trạng thái Chờ duyệt">
+
    Steps:
-   1. ...
+   1. Mở màn <tên màn người dùng thấy>.
+   2. Quan sát <khu vực / thành phần>.
+   3. <thao tác> / So sánh với design (Figma).
 
    Actual:
-   - ...
+   - <hiện tượng quan sát được, ngắn gọn; kèm trích nguyên văn lỗi/số/SQL nếu có>
 
-   Notes (nếu có):
-   - ...
-   
+   Notes:                                 ← optional; bỏ HẲN mục này nếu không có gì cần lưu ý
+   - <lưu ý cần thiết cho dev: điều kiện đặc biệt / caveat / root cause / impact nếu biết>
+
    Account test: <defaults.test_account or from prompt, if any>
    ```
-   `Expected result` field: `Expected:` + content.
+   `Expected result` field: `Expected:` + mong đợi — NGẮN, không đặc tả kỹ thuật (không số đo delta-E, không mã màu, không frame id). Viết theo **loại bug**:
+   - **Function** → nêu hành vi đúng cụ thể (vd "Tổng tiền = đơn giá × SL − voucher").
+   - **Design / UI** → ghi gọn "UI đúng theo Figma/design" (chi tiết khác biệt để ở ảnh khoanh vùng đính kèm).
+   - **Improvement** → nêu mong muốn rõ ràng, cụ thể (vd "Thêm xác nhận trước khi xoá").
+
+   **Writing rules — áp dụng cho CẢ luồng thủ công LẪN auto (exploratory-ui → log-bug):**
+   - **Friendly & ngắn gọn, đúng trọng tâm** — viết cho dev đọc nhanh hiểu ngay, không dài dòng.
+   - **KHÔNG jargon nội bộ trong body** — không đưa Figma frame id (vd `15372:32652`), tên class màn (vd `SalesProductListScreen`), node id… user/dev không tra được. Dùng tên màn/thành phần người dùng nhìn thấy; đối chiếu design chỉ ghi "so sánh với Figma/design".
+   - **Bỏ precondition hiển nhiên** — "đã đăng nhập / app đã tải" là đương nhiên khi test UI → bỏ. Chỉ kiểm tra 1 màn thì Steps đi thẳng "Mở màn X".
+   - **Mục có điều kiện** — "Preconditions"/"Notes" là chỉ dẫn cho AI quyết định CÓ/KHÔNG hiện cả mục, KHÔNG phải chữ in ra body.
+   - **Khác biệt UI thuộc về Attachment** — đừng tranh luận đặc tính kỹ thuật (vd tông xanh lá vs xanh dương) trong body; chỉ nêu khác biệt ở mức người đọc hiểu. **Bằng chứng phải là ảnh khoanh vùng / so sánh** để dev nhìn vào thấy ngay sai chỗ nào (xem step 7).
+
+   **Ví dụ — cứ thế bắt chước (BAD → GOOD):**
+   ```
+   ❌ BAD (dài dòng, jargon, đặc tả kỹ thuật)
+   Preconditions (nếu có):
+   - App SBH bản stg-4.0.8, đã đăng nhập, đang ở màn Home.
+   Steps:
+   1. Bấm tile "Bán hàng" trên Home để vào SalesProductListScreen.
+   2. Quan sát dải chip lọc danh mục phía trên.
+   3. Đối chiếu chip "Tất cả" với Figma "Shinhan - Bán hàng" frame 15372:32652.
+   Actual:
+   - Chip vẽ pill nền đặc + chữ trắng (nền #04AD5C, chữ #FDFEFE).
+   Notes (nếu có):
+   - Bản 4.0.7 chip tô #C7D6FE/#003CE4; 4.0.8 đổi tông nhưng vẫn sai kiểu chip...
+   Expected: Theo Figma 15372:32652 chip phải tonal nền #E3F5EC + chữ #12764D, delta-E nền 31.8, chữ 48.3.
+
+   ✅ GOOD (gọn, friendly, để Attachment lo phần khác biệt)
+   Steps:
+   1. Mở màn Bán hàng (danh sách sản phẩm).
+   2. Quan sát chip lọc danh mục đang được chọn ("Tất cả").
+   3. So sánh với design (Figma).
+   Actual:
+   - Chip đang chọn sai kiểu so với design (xem ảnh đính kèm khoanh vùng).
+   Notes:
+   - Hue brand đang chờ designer chốt (rebrand Shinhan Store) — bug về KIỂU chip.
+   Account test: 0923267268 - 123456
+
+   Expected: UI chip đang chọn đúng theo thiết kế trên Figma.
+   ```
+   (GOOD đã bỏ `Preconditions` vì hiển nhiên, bỏ frame id / tên class màn / mã màu / delta-E, đẩy khác biệt vào ảnh.)
 10. **Create + return link**: full info → create directly (duplicate-check first if `check_duplicate: true`); missing required → show a draft + ask. After create → build a direct record link from `boards.<active>` (`wiki_token`/`base_id` + `table_id` + `view_id` + `record_id`). Multiple bugs in one prompt → create sequentially, return a summary table.
 
 > If the live board fields differ from the config → read the field list, adapt for this run, and suggest the user update `.claude/qa-claude/log-bug.config.yml` (or run `/qa:update-board`).
