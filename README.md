@@ -200,7 +200,7 @@ Kiểm tra **giao diện app/web build ra có giống design Figma không** — 
 2. **Figma không cần token** — đọc design qua **Figma MCP** (đăng nhập Figma khi được hỏi). *(Chỉ môi trường headless/no-MCP mới cần token → `/qa:auth-figma` lo hộ.)*
 3. Plugin mở app (Appium) / web (Playwright) qua MCP, chụp từng màn, **so local**, rồi xuất report.
 
-**Report dễ đọc, đủ để log bug ngay** (không phơi số kỹ thuật SSIM/ΔE):
+**Report dễ đọc, đủ để log bug ngay**:
 
 > **Lỗi 1** — Màn Hóa đơn, tiêu đề. **Design:** text "Products", chữ #000000, nền #FFFFFF, font Arial Regular. **Thực tế:** "Product", chữ #909090, nền #393939, font giống Times. **Sai:** nội dung chữ, màu chữ, màu nền, font. 📷 *(ảnh heatmap)*
 

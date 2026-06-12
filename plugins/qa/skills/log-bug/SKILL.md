@@ -41,10 +41,13 @@ A reusable capability to **create a bug record** on Lark Bitable per the team co
    - ...
    Steps:
    1. ...
+
    Actual:
    - ...
+
    Notes (nếu có):
    - ...
+   
    Account test: <defaults.test_account or from prompt, if any>
    ```
    `Expected result` field: `Expected:` + content.
